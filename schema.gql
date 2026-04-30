@@ -1,0 +1,273 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Tag {
+  name: String!
+}
+
+type Folder {
+  id: ID!
+  name: String!
+  userId: String!
+  color: String
+  workspaces: [Workspace]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  workspaceCount: Int!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Workspace {
+  id: ID!
+  userId: String!
+  taskId: String
+  task: Task
+  title: String!
+  folderId: String
+
+  """JSON string of BlockNote content"""
+  content: String!
+  createdAt: DateTime!
+  saveStatus: Boolean
+  updatedAt: DateTime!
+  folder: Folder
+}
+
+type TaskFilters {
+  status: TaskStatus
+  priorityLevel: Int
+  category: String
+}
+
+enum TaskStatus {
+  Todo
+  Planning
+  Pending
+  OnHold
+  Review
+  Done
+  Backlog
+  Scheduled
+  Archived
+}
+
+type Subtask {
+  title: String!
+  completed: Boolean!
+  timer: Int!
+  notes_encrypted: String
+  estimate_timer: Int
+  priority_level: Int
+  status: String
+  deadline: DateTime
+  category: String
+}
+
+type TaskLink {
+  title: String!
+  url: String!
+}
+
+type Task {
+  id: ID!
+  user_id: String!
+  title: String!
+  notes_encrypted: String!
+  estimate_timer: Int
+  real_timer: Int
+  priority_level: Int!
+  category: String
+  deadline: DateTime!
+  status: TaskStatus!
+  completed_at: DateTime
+  duration: DateTime
+  subtasks: [Subtask!]!
+  created_at: DateTime!
+  updated_at: DateTime!
+  deleted_at: DateTime
+  tags: [Tag!]!
+  filters: TaskFilters
+  workspace: Workspace
+  links: [TaskLink!]!
+  google_event_id: String
+}
+
+type UserSettings {
+  focusDurationPref: Float
+  breakDurationPref: Float
+  notificationsEnabled: Boolean
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String
+  picture: String
+  role: String
+  authProvider: String
+  googleRefreshToken: String
+  subscriptionStatus: String!
+  settings: UserSettings
+}
+
+type AuthResponse {
+  access_token: String!
+  user: User!
+  google_access_token: String
+}
+
+type StatCardValue {
+  value: String!
+  change: String!
+  trend: String!
+}
+
+type ProductivityTrend {
+  day: String!
+  actual: Float!
+  planned: Float!
+}
+
+type TimeDistribution {
+  name: String!
+  value: Float!
+  color: String!
+}
+
+type InsightsResponse {
+  totalFocusHours: StatCardValue!
+  taskCompletion: StatCardValue!
+  energyScore: StatCardValue!
+  goldenWindow: StatCardValue!
+  productivityTrends: [ProductivityTrend!]!
+  timeDistribution: [TimeDistribution!]!
+  heatmap: [Int!]!
+}
+
+type Query {
+  getTasks: [Task!]!
+  getTasksByUser(userId: String!, filters: TaskFilterInput, sort: TaskSortInput): [Task!]!
+  getTask(id: String!): Task!
+  getTaskByFilters(filters: TaskFilterInput!): [Task!]!
+  getTagsByUser(userId: String!): [Tag!]!
+  workspaces(search: String, folderId: String): [Workspace!]!
+  workspace(id: ID!): Workspace!
+  totalWorkspaces: Int!
+  hasWorkspaces: Boolean!
+  folders: [Folder!]!
+  folder(id: ID!): Folder!
+  totalFolders: Int!
+  getInsights(userId: String!, filter: String! = "Weekly"): InsightsResponse!
+}
+
+input TaskFilterInput {
+  status: TaskStatus
+  priorityLevel: Float
+  category: String
+}
+
+input TaskSortInput {
+  sort: String
+  order: String
+}
+
+type Mutation {
+  createTask(createTaskInput: CreateTaskInput!): Task!
+  deleteWorkspaceTasks(workspaceId: String!): Boolean!
+  updateTask(updateTaskInput: UpdateTaskInput!): Task!
+  deleteTask(id: String!): Boolean!
+  addSubtask(taskId: String!, subtask: SubtaskInput!): Task!
+  createWorkspace(createWorkspaceInput: CreateWorkspaceInput!): Workspace!
+  updateWorkspace(updateWorkspaceInput: UpdateWorkspaceInput!): Workspace!
+  removeWorkspace(id: ID!): Boolean!
+  createFolder(createFolderInput: CreateFolderInput!): Folder!
+  updateFolder(updateFolderInput: UpdateFolderInput!): Folder!
+  removeFolder(id: ID!): Boolean!
+  googleLogin(code: String!): AuthResponse!
+  firebaseLogin(token: String!, fullName: String!): AuthResponse!
+}
+
+input CreateTaskInput {
+  user_id: String!
+  title: String!
+  notes_encrypted: String!
+  estimate_timer: Int
+  real_timer: Int
+  duration: String
+  priority_level: Int!
+  deadline: String!
+  category: String!
+  status: TaskStatus
+  subtasks: [SubtaskInput!]!
+  tags: [String!]!
+  links: [LinkInput!]
+  google_event_id: String
+}
+
+input SubtaskInput {
+  title: String!
+  completed: Boolean!
+  timer: Int!
+  notes_encrypted: String
+  estimate_timer: Int
+  priority_level: Int
+  status: TaskStatus
+  deadline: String
+  category: String
+}
+
+input LinkInput {
+  title: String!
+  url: String!
+}
+
+input UpdateTaskInput {
+  user_id: String
+  title: String
+  notes_encrypted: String
+  estimate_timer: Int
+  real_timer: Int
+  duration: String
+  priority_level: Int
+  deadline: String
+  category: String
+  status: TaskStatus
+  subtasks: [SubtaskInput!]
+  tags: [String!]
+  links: [LinkInput!]
+  google_event_id: String
+  id: ID!
+}
+
+input CreateWorkspaceInput {
+  taskId: String
+  folderId: String
+  title: String!
+  content: String!
+  saveStatus: Boolean!
+}
+
+input UpdateWorkspaceInput {
+  taskId: String
+  folderId: String
+  title: String
+  content: String
+  saveStatus: Boolean
+  id: ID!
+}
+
+input CreateFolderInput {
+  name: String!
+  color: String
+}
+
+input UpdateFolderInput {
+  name: String
+  color: String
+  id: ID!
+}

@@ -1,0 +1,96 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type UserSettings {
+  focusDurationPref: Float
+  breakDurationPref: Float
+  notificationsEnabled: Boolean
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String
+  picture: String
+  role: String
+  authProvider: String
+  subscriptionStatus: String
+  settings: UserSettings
+  lastSyncAt: DateTime
+  createdAt: DateTime
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Tag {
+  id: ID!
+  name: String!
+  color: String!
+  userId: String!
+}
+
+type Task {
+  id: ID!
+  title: String!
+  description: String
+  status: String!
+  estimatedPomodoros: Int
+  actualPomodoros: Int
+  userId: String!
+  tags: [Tag!]!
+  tagIds: [String!]
+  dueDate: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type AuthResponse {
+  access_token: String!
+  user: User!
+}
+
+type Query {
+  users: [User!]!
+  me: User!
+  user(id: String!): User!
+  tasks: [Task!]!
+  tags: [Tag!]!
+}
+
+type Mutation {
+  createTask(createTaskInput: CreateTaskInput!): Task!
+  updateTask(id: ID!, updateTaskInput: UpdateTaskInput!): Task!
+  deleteTask(id: ID!): Boolean!
+  createTag(createTagInput: CreateTagInput!): Tag!
+  deleteTag(id: ID!): Boolean!
+  removeWorkspace(id: ID!): Boolean!
+  googleLogin(token: String!): AuthResponse!
+}
+
+input CreateTaskInput {
+  title: String!
+  description: String
+  status: String! = "pending"
+  estimatedPomodoros: Int
+  tagIds: [String!]
+  dueDate: DateTime
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  status: String = "pending"
+  estimatedPomodoros: Int
+  tagIds: [String!]
+  dueDate: DateTime
+  actualPomodoros: Int
+}
+
+input CreateTagInput {
+  name: String!
+  color: String!
+}
