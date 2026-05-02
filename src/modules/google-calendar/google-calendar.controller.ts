@@ -16,6 +16,7 @@ import { processGoogleEvent } from './utils/google-calendar.pipeline';
 import { TasksService } from '../tasks/tasks.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { GoogleEvent } from './interfaces/google-calendar.interfaces';
+import { ITask } from '../tasks/interfaces/task.interface';
 
 /**
  * Normalizes a Google Event ID by removing leading underscores.
@@ -64,8 +65,8 @@ export class GoogleCalendarController {
 
     // 2. Filter out events that already exist in our DB
     const filteredItems = rawData.items.filter((item) => {
-      const normalizedEventId = normalizeId(item.id as string);
-      const baseEventId = getBaseId(item.id as string);
+      const normalizedEventId = normalizeId(item.id);
+      const baseEventId = getBaseId(item.id);
       return (
         !normalizedSyncedIds.has(normalizedEventId) &&
         !normalizedSyncedIds.has(baseEventId)
@@ -77,7 +78,37 @@ export class GoogleCalendarController {
       filteredItems.map((event) => processGoogleEvent(event)),
     );
 
-    return processedEvents;
+    // 4. Automatically save them to the database
+    const savedTasks = await Promise.all(
+      processedEvents.map(async (event) => {
+        const taskData = {
+          userId,
+          title: event.title,
+          notesEncrypted: event.notes_encrypted,
+          estimateTimer: event.estimate_timer,
+          priorityLevel: event.priority_level,
+          estimated_start_date: event.estimated_start_date
+            ? new Date(event.estimated_start_date)
+            : undefined,
+          estimated_end_date: event.estimated_end_date
+            ? new Date(event.estimated_end_date)
+            : undefined,
+          deadline: new Date(event.deadline),
+          status: event.status,
+          subtasks: event.subtasks,
+          tags: event.tags,
+          links: event.links,
+          task_type: 'PlatformTask',
+          google_event_id: event.google_event_id,
+          source: 'google',
+          sync_status: 'synced',
+          collaborators: event.collaborators,
+        };
+        return this.tasksService.create(taskData as ITask);
+      }),
+    );
+
+    return savedTasks;
   }
 
   @Post('events')
