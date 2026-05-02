@@ -3,10 +3,9 @@ import { IsBoolean, IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
 @InputType()
 export class CreateWorkspaceInput {
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
-  @IsString()
-  taskId?: string;
+  taskId?: string | null;
 
   @Field({ nullable: true })
   @IsOptional()
@@ -32,6 +31,10 @@ export class UpdateWorkspaceInput extends PartialType(CreateWorkspaceInput) {
   @IsString()
   @IsNotEmpty()
   id: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  taskId?: string | null;
 
   @Field({ nullable: true })
   @IsOptional()

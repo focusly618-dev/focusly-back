@@ -46,7 +46,7 @@ export class WorkspacesService {
       ...workspaceData,
       createdAt: now,
       updatedAt: now,
-    } as Workspace;
+    };
   }
 
   async findAll(
@@ -67,7 +67,7 @@ export class WorkspacesService {
     const snapshot = await query.get();
 
     let workspaces = snapshot.docs.map((doc) => {
-      const data = doc.data() as admin.firestore.DocumentData;
+      const data = doc.data();
       return {
         ...data,
         saveStatus: (data.saveStatus as boolean | undefined) ?? false,
@@ -142,6 +142,29 @@ export class WorkspacesService {
     // Remove id from updateData if present
     delete updateData.id;
 
+    // Handle exclusive taskId: if this workspace is taking a taskId, other workspaces must release it
+    if (updateWorkspaceInput.taskId) {
+      const otherWorkspaces = await this.collectionRef
+        .where('taskId', '==', updateWorkspaceInput.taskId)
+        .get();
+
+      const batch = this.firebaseService.db.batch();
+      otherWorkspaces.docs.forEach((otherDoc) => {
+        if (otherDoc.id !== id) {
+          batch.update(otherDoc.ref, {
+            taskId: admin.firestore.FieldValue.delete(),
+            updatedAt: admin.firestore.Timestamp.fromDate(now),
+          });
+        }
+      });
+      await batch.commit();
+    }
+
+    // Handle unlinking (null taskId)
+    if (updateWorkspaceInput.taskId === null) {
+      updateData.taskId = admin.firestore.FieldValue.delete();
+    }
+
     // Remove undefined fields
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined) {
@@ -149,7 +172,9 @@ export class WorkspacesService {
       }
     });
 
-    await docRef.update(updateData as admin.firestore.UpdateData<admin.firestore.DocumentData>);
+    await docRef.update(
+      updateData as admin.firestore.UpdateData<admin.firestore.DocumentData>,
+    );
 
     const updatedDoc = await docRef.get();
     const updatedData = updatedDoc.data() as admin.firestore.DocumentData;
@@ -189,7 +214,7 @@ export class WorkspacesService {
     }
 
     const doc = snapshot.docs[0];
-    const data = doc.data() as admin.firestore.DocumentData;
+    const data = doc.data();
 
     return {
       ...data,

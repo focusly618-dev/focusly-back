@@ -17,7 +17,7 @@ export class Pipeline<TInput, TOutput> {
     name: string,
     stageFn: (input: TOutput) => TNext | Promise<TNext>,
   ): Pipeline<TInput, TNext> {
-    this.stages.push({ name, execute: stageFn as (input: unknown) => unknown });
+    this.stages.push({ name, execute: stageFn });
     return this as unknown as Pipeline<TInput, TNext>;
   }
 
