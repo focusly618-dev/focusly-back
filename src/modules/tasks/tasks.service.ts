@@ -175,8 +175,15 @@ export class TasksService {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         tasks = tasks.filter((t) => t.status === filters.status);
       }
-      if (filters.priorityLevel) {
-        tasks = tasks.filter((t) => t.priorityLevel === filters.priorityLevel);
+      if (filters.priorityLevel !== undefined) {
+        // High priority is >= 3 (can be 3, 4, etc.), lower levels use exact match
+        if (filters.priorityLevel >= 3) {
+          tasks = tasks.filter((t) => t.priorityLevel >= 3);
+        } else {
+          tasks = tasks.filter(
+            (t) => t.priorityLevel === filters.priorityLevel,
+          );
+        }
       }
       if (filters.category) {
         tasks = tasks.filter((t) => t.category === filters.category);
@@ -209,10 +216,9 @@ export class TasksService {
         let valA = a[field];
         let valB = b[field];
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        if (valA instanceof Date) valA = valA.getTime() as any;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        if (valB instanceof Date) valB = valB.getTime() as any;
+        if (valA instanceof Date) valA = valA.getTime();
+
+        if (valB instanceof Date) valB = valB.getTime();
 
         if (valA === undefined || valA === null) return 1;
         if (valB === undefined || valB === null) return -1;
@@ -451,11 +457,12 @@ export class TasksService {
         timer: (s.timer as number) || 0,
         notesEncrypted: s.notesEncrypted as string | undefined,
         estimateTimer: s.estimateTimer as number | undefined,
-        priorityLevel: s.priorityLevel as string | undefined,
+        priorityLevel: Number(s.priorityLevel ?? s.priority_level ?? 0),
         status: s.status as string | undefined,
         deadline: convertDate(s.deadline),
         category: s.category as string | undefined,
       })),
+      priorityLevel: Number(data.priorityLevel ?? data.priority_level ?? 0),
       collaborators: (data.collaborators as any[]) || [],
       notified: (data.notified as boolean) || false,
     } as ITask;
