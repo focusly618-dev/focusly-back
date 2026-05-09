@@ -20,6 +20,12 @@ export class Workspace {
   title: string;
 
   @Field({ nullable: true })
+  emoji?: string;
+
+  @Field({ nullable: true })
+  background_color?: string;
+
+  @Field({ nullable: true })
   folderId?: string;
 
   @Field(() => String, { description: 'JSON string of BlockNote content' })
