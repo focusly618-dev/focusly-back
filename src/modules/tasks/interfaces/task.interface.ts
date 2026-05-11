@@ -32,6 +32,8 @@ export interface ITask {
     status?: string;
     deadline?: Date | string;
     category?: string;
+    realTimer?: number;
+    tags?: string[];
   }[];
   createdAt: Date;
   updatedAt: Date;

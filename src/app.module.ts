@@ -4,7 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { GqlThrottlerGuard } from './modules/auth/gql-throttler.guard';
+// import { GqlThrottlerGuard } from './modules/auth/gql-throttler.guard';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -36,7 +36,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ]),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: true,
+      autoSchemaFile: 'src/schema.gql',
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
     }),
@@ -56,10 +56,10 @@ import { ScheduleModule } from '@nestjs/schedule';
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: GqlThrottlerGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: GqlThrottlerGuard,
+    // },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

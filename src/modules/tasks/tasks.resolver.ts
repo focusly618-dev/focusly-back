@@ -23,6 +23,20 @@ import {
 import { GqlAuthGuard } from '../auth/gql-auth.guard';
 import { ITask } from './interfaces/task.interface';
 
+// Interface for subtasks coming from frontend (snake_case)
+interface SubtaskFromFrontend {
+  title: string;
+  completed: boolean;
+  timer: number;
+  notes_encrypted?: string;
+  estimate_timer?: number;
+  priority_level?: number;
+  status?: string;
+  deadline?: string;
+  category?: string;
+  links?: Array<{ title: string; url: string }>;
+}
+
 @Resolver(() => Task)
 @UseGuards(GqlAuthGuard)
 export class TasksResolver {
@@ -173,6 +187,20 @@ export class TasksResolver {
       updateData.sync_status = rest.sync_status as ITask['sync_status'];
     if (rest.status !== undefined) updateData.status = rest.status;
     if (rest.category !== undefined) updateData.category = rest.category;
+    if (rest.subtasks !== undefined) {
+      updateData.subtasks = rest.subtasks.map((st: SubtaskFromFrontend) => ({
+        title: st.title,
+        completed: st.completed,
+        timer: st.timer,
+        notesEncrypted: st.notes_encrypted,
+        estimateTimer: st.estimate_timer,
+        priorityLevel: st.priority_level,
+        status: st.status,
+        deadline: st.deadline,
+        category: st.category,
+        links: st.links,
+      }));
+    }
 
     return this.tasksService.update(id, updateData);
   }
