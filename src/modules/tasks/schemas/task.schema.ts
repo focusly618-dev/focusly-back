@@ -59,6 +59,9 @@ export class Subtask {
   @Field({ nullable: true })
   category?: string;
 
+  @Field({ nullable: true })
+  color?: string;
+
   @Field(() => [TaskLink], { defaultValue: [] })
   links: TaskLink[];
 }
@@ -97,6 +100,9 @@ export class Task {
 
   @Field({ nullable: true })
   category?: string;
+
+  @Field({ nullable: true })
+  color?: string;
 
   @Field()
   deadline: Date;

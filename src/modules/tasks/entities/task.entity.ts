@@ -47,6 +47,9 @@ export class Subtask {
   @Field({ nullable: true })
   status?: string;
 
+  @Field({ nullable: true })
+  color?: string;
+
   @Field({ name: 'completed_at', nullable: true })
   completedAt?: Date;
 
@@ -94,6 +97,9 @@ export class SubtaskInput {
 
   @Field({ nullable: true })
   status?: string;
+
+  @Field({ nullable: true })
+  color?: string;
 
   @Field({ name: 'completed_at', nullable: true })
   completedAt?: string;
@@ -163,6 +169,9 @@ export class Task {
 
   @Field({ nullable: true })
   category?: string;
+
+  @Field({ nullable: true })
+  color?: string;
 
   @Field()
   deadline: Date;

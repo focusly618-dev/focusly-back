@@ -478,8 +478,10 @@ export class TasksService {
         status: s.status as string | undefined,
         deadline: convertDate(s.deadline),
         category: s.category as string | undefined,
+        color: s.color as string | undefined,
       })),
       priorityLevel: Number(data.priorityLevel ?? data.priority_level ?? 0),
+      color: (data.color as string) || undefined,
       collaborators: (data.collaborators as any[]) || [],
       notified: (data.notified as boolean) || false,
     } as ITask;

@@ -78,6 +78,11 @@ export class SubtaskInput {
   @IsString()
   category?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  color?: string;
+
   @Field(() => [LinkInput], { nullable: true })
   @IsOptional()
   @IsArray()
@@ -138,6 +143,11 @@ export class CreateTaskInput {
   @IsOptional()
   @IsString()
   category?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  color?: string;
 
   @Field(() => TaskStatus, { nullable: true })
   @IsOptional()
