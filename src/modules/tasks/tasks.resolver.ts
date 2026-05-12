@@ -34,6 +34,7 @@ interface SubtaskFromFrontend {
   status?: string;
   deadline?: string;
   category?: string;
+  color?: string;
   links?: Array<{ title: string; url: string }>;
 }
 
@@ -93,6 +94,7 @@ export class TasksResolver {
       estimated_start_date,
       estimated_end_date,
       collaborators,
+      color,
       ...rest
     } = createTaskInput;
 
@@ -109,6 +111,7 @@ export class TasksResolver {
       deadline: new Date(createTaskInput.deadline),
       status: rest.status ?? TaskStatus.Todo,
       category: rest.category,
+      color: color,
       task_type: (rest.task_type as ITask['task_type']) || 'PlatformTask',
       source: rest.source as ITask['source'],
       sync_status: rest.sync_status as ITask['sync_status'],
@@ -187,6 +190,7 @@ export class TasksResolver {
       updateData.sync_status = rest.sync_status as ITask['sync_status'];
     if (rest.status !== undefined) updateData.status = rest.status;
     if (rest.category !== undefined) updateData.category = rest.category;
+    if (rest.color !== undefined) updateData.color = rest.color;
     if (rest.subtasks !== undefined) {
       updateData.subtasks = rest.subtasks.map((st: SubtaskFromFrontend) => ({
         title: st.title,
@@ -198,6 +202,7 @@ export class TasksResolver {
         status: st.status,
         deadline: st.deadline,
         category: st.category,
+        color: st.color,
         links: st.links,
       }));
     }

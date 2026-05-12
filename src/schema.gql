@@ -28,6 +28,8 @@ type Workspace {
   taskId: String
   task: Task
   title: String!
+  emoji: String
+  background_color: String
   folderId: String
 
   """JSON string of BlockNote content"""
@@ -73,6 +75,7 @@ type Subtask {
   status: String
   deadline: DateTime
   category: String
+  color: String
   links: [TaskLink!]!
 }
 
@@ -90,6 +93,7 @@ type Task {
   real_timer: Int
   priority_level: Int!
   category: String
+  color: String
   deadline: DateTime!
   status: TaskStatus!
   completed_at: DateTime
@@ -218,6 +222,7 @@ input CreateTaskInput {
   priority_level: Int!
   deadline: String!
   category: String!
+  color: String
   status: TaskStatus
   subtasks: [SubtaskInput!]!
   tags: [String!]!
@@ -241,6 +246,7 @@ input SubtaskInput {
   status: TaskStatus
   deadline: String
   category: String
+  color: String
   links: [LinkInput!]
 }
 
@@ -266,6 +272,7 @@ input UpdateTaskInput {
   priority_level: Int
   deadline: String
   category: String
+  color: String
   status: TaskStatus
   subtasks: [SubtaskInput!]
   tags: [String!]
@@ -284,6 +291,8 @@ input CreateWorkspaceInput {
   taskId: String
   folderId: String
   title: String!
+  emoji: String
+  background_color: String
   content: String!
   saveStatus: Boolean!
 }
@@ -292,6 +301,8 @@ input UpdateWorkspaceInput {
   taskId: String
   folderId: String
   title: String
+  emoji: String
+  background_color: String
   content: String
   saveStatus: Boolean
   id: ID!
