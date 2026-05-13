@@ -173,6 +173,7 @@ export class TasksResolver {
       updateData.sync_status = rest.sync_status as ITask['sync_status'];
     if (rest.status !== undefined) updateData.status = rest.status;
     if (rest.category !== undefined) updateData.category = rest.category;
+    if (rest.title !== undefined) updateData.title = rest.title;
 
     return this.tasksService.update(id, updateData);
   }
