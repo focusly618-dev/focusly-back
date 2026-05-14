@@ -2,6 +2,117 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type Tag {
+  name: String!
+}
+
+type Folder {
+  id: ID!
+  name: String!
+  userId: String!
+  color: String
+  workspaces: [Workspace]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  workspaceCount: Int!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Workspace {
+  id: ID!
+  userId: String!
+  taskId: String
+  task: Task
+  title: String!
+  emoji: String
+  background_color: String
+  folderId: String
+
+  """JSON string of BlockNote content"""
+  content: String!
+  createdAt: DateTime!
+  saveStatus: Boolean
+  updatedAt: DateTime!
+  folder: Folder
+}
+
+type Collaborator {
+  name: String
+  email: String!
+  avatar: String
+  responseStatus: String
+}
+
+type TaskFilters {
+  status: TaskStatus
+  priorityLevel: Int
+  category: String
+}
+
+enum TaskStatus {
+  Todo
+  Planning
+  Pending
+  OnHold
+  Review
+  Done
+  Backlog
+  Scheduled
+  Archived
+}
+
+type Subtask {
+  title: String!
+  completed: Boolean!
+  timer: Int!
+  notes_encrypted: String
+  estimate_timer: Int
+  priority_level: Int
+  status: String
+  deadline: DateTime
+  category: String
+  color: String
+  links: [TaskLink!]!
+}
+
+type TaskLink {
+  title: String!
+  url: String!
+}
+
+type Task {
+  id: ID!
+  user_id: String!
+  title: String!
+  notes_encrypted: String!
+  estimate_timer: Int
+  real_timer: Int
+  priority_level: Int!
+  category: String
+  color: String
+  deadline: DateTime!
+  status: TaskStatus!
+  completed_at: DateTime
+  duration: DateTime
+  subtasks: [Subtask!]!
+  created_at: DateTime!
+  updated_at: DateTime!
+  deleted_at: DateTime
+  tags: [Tag!]!
+  filters: TaskFilters
+  workspace: Workspace
+  links: [TaskLink!]!
+  task_type: String
+  google_event_id: String
+  estimated_start_date: DateTime
+  estimated_end_date: DateTime
+  collaborators: [Collaborator!]
+}
+
 type UserSettings {
   focusDurationPref: Float
   breakDurationPref: Float
@@ -15,82 +126,195 @@ type User {
   picture: String
   role: String
   authProvider: String
-  subscriptionStatus: String
+  googleRefreshToken: String
+  subscriptionStatus: String!
   settings: UserSettings
-  lastSyncAt: DateTime
-  createdAt: DateTime
-}
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
-type Tag {
-  id: ID!
-  name: String!
-  color: String!
-  userId: String!
-}
-
-type Task {
-  id: ID!
-  title: String!
-  description: String
-  status: String!
-  estimatedPomodoros: Int
-  actualPomodoros: Int
-  userId: String!
-  tags: [Tag!]!
-  tagIds: [String!]
-  dueDate: DateTime
-  createdAt: DateTime
-  updatedAt: DateTime
+  bio: String
 }
 
 type AuthResponse {
   access_token: String!
   user: User!
+  google_access_token: String
+}
+
+type StatCardValue {
+  value: String!
+  change: String!
+  trend: String!
+}
+
+type ProductivityTrend {
+  label: String!
+  actual: Float!
+  planned: Float!
+}
+
+type TimeDistribution {
+  name: String!
+  value: Float!
+  color: String!
+}
+
+type InsightsResponse {
+  totalFocusHours: StatCardValue!
+  taskCompletion: StatCardValue!
+  energyScore: StatCardValue!
+  goldenWindow: StatCardValue!
+  breakHours: StatCardValue!
+  productivityTrends: [ProductivityTrend!]!
+  timeDistribution: [TimeDistribution!]!
+  heatmap: [Int!]!
+  heatmapLabels: [String!]
 }
 
 type Query {
-  users: [User!]!
-  me: User!
-  user(id: String!): User!
-  tasks: [Task!]!
-  tags: [Tag!]!
+  getTasks: [Task!]!
+  getTasksByUser(userId: String!, filters: TaskFilterInput, sort: TaskSortInput): [Task!]!
+  getTask(id: String!): Task!
+  getTaskByFilters(filters: TaskFilterInput!): [Task!]!
+  getTagsByUser(userId: String!): [Tag!]!
+  workspaces(search: String, folderId: String): [Workspace!]!
+  workspace(id: ID!): Workspace!
+  totalWorkspaces: Int!
+  folders: [Folder!]!
+  folder(id: ID!): Folder!
+  totalFolders: Int!
+  getInsights(userId: String!, filter: String! = "Weekly"): InsightsResponse!
+}
+
+input TaskFilterInput {
+  status: TaskStatus
+  priorityLevel: Float
+  category: String
+  startDate: String
+  endDate: String
+}
+
+input TaskSortInput {
+  sort: String
+  order: String
 }
 
 type Mutation {
   createTask(createTaskInput: CreateTaskInput!): Task!
-  updateTask(id: ID!, updateTaskInput: UpdateTaskInput!): Task!
-  deleteTask(id: ID!): Boolean!
-  createTag(createTagInput: CreateTagInput!): Tag!
-  deleteTag(id: ID!): Boolean!
+  deleteWorkspaceTasks(workspaceId: String!): Boolean!
+  updateTask(updateTaskInput: UpdateTaskInput!): Task!
+  deleteTask(id: String!): Boolean!
+  addSubtask(taskId: String!, subtask: SubtaskInput!): Task!
+  createWorkspace(createWorkspaceInput: CreateWorkspaceInput!): Workspace!
+  updateWorkspace(updateWorkspaceInput: UpdateWorkspaceInput!): Workspace!
   removeWorkspace(id: ID!): Boolean!
-  googleLogin(token: String!): AuthResponse!
+  googleLogin(code: String!): AuthResponse!
+  firebaseLogin(token: String!, fullName: String!): AuthResponse!
+  createFolder(createFolderInput: CreateFolderInput!): Folder!
+  updateFolder(updateFolderInput: UpdateFolderInput!): Folder!
+  removeFolder(id: ID!): Boolean!
 }
 
 input CreateTaskInput {
+  user_id: String!
   title: String!
-  description: String
-  status: String! = "pending"
-  estimatedPomodoros: Int
-  tagIds: [String!]
-  dueDate: DateTime
+  notes_encrypted: String!
+  estimate_timer: Int
+  real_timer: Int
+  duration: String
+  priority_level: Int!
+  deadline: String!
+  category: String!
+  color: String
+  status: TaskStatus
+  subtasks: [SubtaskInput!]!
+  tags: [String!]!
+  links: [LinkInput!]
+  task_type: String
+  google_event_id: String
+  estimated_start_date: String
+  estimated_end_date: String
+  source: String
+  sync_status: String
+  collaborators: [CollaboratorInput!]
+}
+
+input SubtaskInput {
+  title: String!
+  completed: Boolean!
+  timer: Int!
+  notes_encrypted: String
+  estimate_timer: Int
+  priority_level: Int
+  status: TaskStatus
+  deadline: String
+  category: String
+  color: String
+  links: [LinkInput!]
+}
+
+input LinkInput {
+  title: String!
+  url: String!
+}
+
+input CollaboratorInput {
+  name: String
+  email: String!
+  avatar: String
+  responseStatus: String
 }
 
 input UpdateTaskInput {
+  user_id: String
   title: String
-  description: String
-  status: String = "pending"
-  estimatedPomodoros: Int
-  tagIds: [String!]
-  dueDate: DateTime
-  actualPomodoros: Int
+  notes_encrypted: String
+  estimate_timer: Int
+  real_timer: Int
+  duration: String
+  priority_level: Int
+  deadline: String
+  category: String
+  color: String
+  status: TaskStatus
+  subtasks: [SubtaskInput!]
+  tags: [String!]
+  links: [LinkInput!]
+  task_type: String
+  google_event_id: String
+  estimated_start_date: String
+  estimated_end_date: String
+  source: String
+  sync_status: String
+  collaborators: [CollaboratorInput!]
+  id: ID!
 }
 
-input CreateTagInput {
+input CreateWorkspaceInput {
+  taskId: String
+  folderId: String
+  title: String!
+  emoji: String
+  background_color: String
+  content: String!
+  saveStatus: Boolean!
+}
+
+input UpdateWorkspaceInput {
+  taskId: String
+  folderId: String
+  title: String
+  emoji: String
+  background_color: String
+  content: String
+  saveStatus: Boolean
+  id: ID!
+}
+
+input CreateFolderInput {
   name: String!
-  color: String!
+  color: String
+}
+
+input UpdateFolderInput {
+  name: String
+  color: String
+  id: ID!
 }

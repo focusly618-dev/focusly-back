@@ -81,7 +81,12 @@ export class TasksService {
 
   async findAll(): Promise<ITask[]> {
     const snapshot = await this.collection.where('deletedAt', '==', null).get();
-    return snapshot.docs.map((doc) => this.mapToTask(doc.data()));
+    const tasks = snapshot.docs.map((doc) => this.mapToTask(doc.data()));
+    console.log(
+      'findAll - Tasks sent to frontend:',
+      JSON.stringify(tasks, null, 2),
+    );
+    return tasks;
   }
 
   async filterByStatus(
@@ -125,6 +130,12 @@ export class TasksService {
       });
     }
 
+    console.log(
+      'filterByStatus - Tasks sent to frontend:',
+      JSON.stringify(tasks, null, 2),
+    );
+    console.log('filterByStatus - Filters:', JSON.stringify(filters, null, 2));
+    console.log('filterByStatus - Sort:', JSON.stringify(sort, null, 2));
     return tasks;
   }
 
@@ -229,6 +240,12 @@ export class TasksService {
       });
     }
 
+    console.log(
+      'findAllByUser - Tasks sent to frontend:',
+      JSON.stringify(tasks, null, 2),
+    );
+    console.log('findAllByUser - Filters:', JSON.stringify(filters, null, 2));
+    console.log('findAllByUser - Sort:', JSON.stringify(sort, null, 2));
     return tasks;
   }
 
@@ -461,8 +478,10 @@ export class TasksService {
         status: s.status as string | undefined,
         deadline: convertDate(s.deadline),
         category: s.category as string | undefined,
+        color: s.color as string | undefined,
       })),
       priorityLevel: Number(data.priorityLevel ?? data.priority_level ?? 0),
+      color: (data.color as string) || undefined,
       collaborators: (data.collaborators as any[]) || [],
       notified: (data.notified as boolean) || false,
     } as ITask;

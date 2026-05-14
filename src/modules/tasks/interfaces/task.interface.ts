@@ -8,6 +8,7 @@ export interface ITask {
   duration?: Date;
   priorityLevel: number;
   category?: string;
+  color?: string;
   estimated_start_date?: Date;
   estimated_end_date?: Date;
   deadline: Date;
@@ -32,6 +33,9 @@ export interface ITask {
     status?: string;
     deadline?: Date | string;
     category?: string;
+    color?: string;
+    realTimer?: number;
+    tags?: string[];
   }[];
   createdAt: Date;
   updatedAt: Date;

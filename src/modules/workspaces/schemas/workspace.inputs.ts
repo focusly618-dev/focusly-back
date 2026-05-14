@@ -16,6 +16,16 @@ export class CreateWorkspaceInput {
   @IsString()
   title: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  emoji?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  background_color?: string;
+
   @Field()
   @IsString()
   content: string;

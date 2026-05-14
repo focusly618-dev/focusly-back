@@ -23,6 +23,21 @@ import {
 import { GqlAuthGuard } from '../auth/gql-auth.guard';
 import { ITask } from './interfaces/task.interface';
 
+// Interface for subtasks coming from frontend (snake_case)
+interface SubtaskFromFrontend {
+  title: string;
+  completed: boolean;
+  timer: number;
+  notes_encrypted?: string;
+  estimate_timer?: number;
+  priority_level?: number;
+  status?: string;
+  deadline?: string;
+  category?: string;
+  color?: string;
+  links?: Array<{ title: string; url: string }>;
+}
+
 @Resolver(() => Task)
 @UseGuards(GqlAuthGuard)
 export class TasksResolver {
@@ -79,6 +94,7 @@ export class TasksResolver {
       estimated_start_date,
       estimated_end_date,
       collaborators,
+      color,
       ...rest
     } = createTaskInput;
 
@@ -95,6 +111,7 @@ export class TasksResolver {
       deadline: new Date(createTaskInput.deadline),
       status: rest.status ?? TaskStatus.Todo,
       category: rest.category,
+      color: color,
       task_type: (rest.task_type as ITask['task_type']) || 'PlatformTask',
       source: rest.source as ITask['source'],
       sync_status: rest.sync_status as ITask['sync_status'],
@@ -174,6 +191,22 @@ export class TasksResolver {
     if (rest.status !== undefined) updateData.status = rest.status;
     if (rest.category !== undefined) updateData.category = rest.category;
     if (rest.title !== undefined) updateData.title = rest.title;
+    if (rest.color !== undefined) updateData.color = rest.color;
+    if (rest.subtasks !== undefined) {
+      updateData.subtasks = rest.subtasks.map((st: SubtaskFromFrontend) => ({
+        title: st.title,
+        completed: st.completed,
+        timer: st.timer,
+        notesEncrypted: st.notes_encrypted,
+        estimateTimer: st.estimate_timer,
+        priorityLevel: st.priority_level,
+        status: st.status,
+        deadline: st.deadline,
+        category: st.category,
+        color: st.color,
+        links: st.links,
+      }));
+    }
 
     return this.tasksService.update(id, updateData);
   }

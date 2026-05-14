@@ -28,6 +28,12 @@ export class WorkspacesService {
       id: newWorkspaceRef.id,
       userId,
       title: createWorkspaceInput.title,
+      ...(createWorkspaceInput.emoji && {
+        emoji: createWorkspaceInput.emoji,
+      }),
+      ...(createWorkspaceInput.background_color && {
+        background_color: createWorkspaceInput.background_color,
+      }),
       content: createWorkspaceInput.content,
       ...(createWorkspaceInput.taskId && {
         taskId: createWorkspaceInput.taskId,
