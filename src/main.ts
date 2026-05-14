@@ -66,14 +66,25 @@ export default async (req: Request, res: Response) => {
     return;
   }
 
-  if (!app) {
-    app = await bootstrap();
+  try {
+    if (!app) {
+      app = await bootstrap();
+    }
+    const server = app.getHttpAdapter().getInstance() as (
+      req: Request,
+      res: Response,
+    ) => void;
+    server(req, res);
+  } catch (error) {
+    console.error('Bootstrap/handler error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Unknown error during bootstrap',
+    });
   }
-  const server = app.getHttpAdapter().getInstance() as (
-    req: Request,
-    res: Response,
-  ) => void;
-  server(req, res);
 };
 
 // Local development support

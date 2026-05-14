@@ -11,7 +11,10 @@ export class FirebaseService implements OnModuleInit {
     const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL');
     let privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY');
     if (privateKey) {
-      privateKey = privateKey.replace(/\\n/g, '\n').replace(/^"|"$/g, '');
+      // Remove surrounding quotes if present
+      privateKey = privateKey.replace(/^"|"$/g, '');
+      // Handle escaped newlines (both \\n and \n as literal two-char sequences)
+      privateKey = privateKey.replace(/\\n/g, '\n');
     }
     if (admin.apps.length === 0) {
       if (projectId && clientEmail && privateKey) {
