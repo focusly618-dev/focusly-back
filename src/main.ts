@@ -47,18 +47,20 @@ export default async (req: Request, res: Response) => {
     ? origin
     : ALLOWED_ORIGINS[0];
 
+  // Always set CORS headers — even on 500 errors, so the browser shows the real error
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+  );
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Requested-With',
+  );
+
   // Handle OPTIONS preflight immediately — skip NestJS bootstrap
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Requested-With',
-    );
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
     res.status(204).end();
     return;
