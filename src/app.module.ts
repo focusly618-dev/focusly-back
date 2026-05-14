@@ -36,7 +36,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ]),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: 'src/schema.gql',
+      autoSchemaFile: true,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
     }),
