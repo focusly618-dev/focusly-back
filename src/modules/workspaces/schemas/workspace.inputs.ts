@@ -26,6 +26,11 @@ export class CreateWorkspaceInput {
   @IsString()
   background_color?: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  card_show_background?: boolean;
+
   @Field()
   @IsString()
   content: string;

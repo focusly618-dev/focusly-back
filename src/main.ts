@@ -1,6 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+import { webcrypto } from 'node:crypto';
+
+// Polyfill for crypto if not available (needed for @nestjs/schedule in older Node versions)
+if (typeof global.crypto === 'undefined') {
+  Object.defineProperty(global, 'crypto', {
+    value: webcrypto,
+    writable: true,
+    configurable: true,
+  });
+}
+
 import { ValidationPipe, INestApplication } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { Request, Response } from 'express';
