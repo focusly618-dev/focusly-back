@@ -26,6 +26,9 @@ export class Workspace {
   background_color?: string;
 
   @Field({ nullable: true })
+  card_show_background?: boolean;
+
+  @Field({ nullable: true })
   folderId?: string;
 
   @Field(() => String, { description: 'JSON string of BlockNote content' })

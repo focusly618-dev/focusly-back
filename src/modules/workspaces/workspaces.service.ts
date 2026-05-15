@@ -34,6 +34,9 @@ export class WorkspacesService {
       ...(createWorkspaceInput.background_color && {
         background_color: createWorkspaceInput.background_color,
       }),
+      ...(createWorkspaceInput.card_show_background !== undefined && {
+        card_show_background: createWorkspaceInput.card_show_background,
+      }),
       content: createWorkspaceInput.content,
       ...(createWorkspaceInput.taskId && {
         taskId: createWorkspaceInput.taskId,
@@ -145,6 +148,25 @@ export class WorkspacesService {
       updatedAt: admin.firestore.Timestamp.fromDate(now),
     };
 
+    // Explicitly handle emoji and background_color persistence/removal
+    if (updateWorkspaceInput.emoji === null || updateWorkspaceInput.emoji === '') {
+      updateData.emoji = admin.firestore.FieldValue.delete();
+    } else if (updateWorkspaceInput.emoji) {
+      updateData.emoji = updateWorkspaceInput.emoji;
+    }
+
+    if (updateWorkspaceInput.background_color === null || updateWorkspaceInput.background_color === 'none') {
+      updateData.background_color = admin.firestore.FieldValue.delete();
+    } else if (updateWorkspaceInput.background_color) {
+      updateData.background_color = updateWorkspaceInput.background_color;
+    }
+
+    if (updateWorkspaceInput.card_show_background === null) {
+      updateData.card_show_background = admin.firestore.FieldValue.delete();
+    } else if (updateWorkspaceInput.card_show_background !== undefined) {
+      updateData.card_show_background = updateWorkspaceInput.card_show_background;
+    }
+
     // Remove id from updateData if present
     delete updateData.id;
 
@@ -171,7 +193,7 @@ export class WorkspacesService {
       updateData.taskId = admin.firestore.FieldValue.delete();
     }
 
-    // Remove undefined fields
+    // Remove undefined fields to avoid overwriting with undefined
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined) {
         delete updateData[key];

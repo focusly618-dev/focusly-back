@@ -30,6 +30,7 @@ type Workspace {
   title: String!
   emoji: String
   background_color: String
+  card_show_background: Boolean
   folderId: String
 
   """JSON string of BlockNote content"""
@@ -293,6 +294,7 @@ input CreateWorkspaceInput {
   title: String!
   emoji: String
   background_color: String
+  card_show_background: Boolean
   content: String!
   saveStatus: Boolean!
 }
@@ -303,6 +305,7 @@ input UpdateWorkspaceInput {
   title: String
   emoji: String
   background_color: String
+  card_show_background: Boolean
   content: String
   saveStatus: Boolean
   id: ID!
