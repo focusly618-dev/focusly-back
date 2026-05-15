@@ -88,6 +88,11 @@ export class SubtaskInput {
   @ValidateNested({ each: true })
   @Type(() => LinkInput)
   links?: LinkInput[];
+
+  @Field({ name: 'use_ai', nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  use_ai?: boolean;
 }
 
 @InputType()
@@ -192,6 +197,11 @@ export class CreateTaskInput {
   @ValidateNested({ each: true })
   @Type(() => CollaboratorInput)
   collaborators?: CollaboratorInput[];
+
+  @Field({ name: 'use_ai', nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  use_ai?: boolean;
 }
 
 @InputType()
