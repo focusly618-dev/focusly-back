@@ -7,10 +7,10 @@ export class CreateWorkspaceInput {
   @IsOptional()
   taskId?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  folderId?: string;
+  folderId?: string | null;
 
   @Field()
   @IsString()
@@ -51,8 +51,7 @@ export class UpdateWorkspaceInput extends PartialType(CreateWorkspaceInput) {
   @IsOptional()
   taskId?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
-  @IsString()
-  folderId?: string;
+  folderId?: string | null;
 }

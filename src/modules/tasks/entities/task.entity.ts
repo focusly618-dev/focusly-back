@@ -5,14 +5,14 @@ import { Workspace } from '../../workspaces/entities/workspace.entity';
 
 @ObjectType()
 export class TaskFilters {
-  @Field(() => TaskStatus, { nullable: true })
-  status?: TaskStatus;
+  @Field(() => [TaskStatus], { nullable: true })
+  status?: TaskStatus[];
 
-  @Field(() => Int, { nullable: true })
-  priorityLevel?: number;
+  @Field(() => [Int], { nullable: true })
+  priorityLevel?: number[];
 
-  @Field({ nullable: true })
-  category?: string;
+  @Field(() => [String], { nullable: true })
+  category?: string[];
 }
 
 @ObjectType()

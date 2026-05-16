@@ -205,24 +205,6 @@ export class CreateTaskInput {
 }
 
 @InputType()
-export class TaskFilterInput {
-  @Field(() => TaskStatus, { nullable: true })
-  @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
-
-  @Field(() => Number, { nullable: true })
-  @IsOptional()
-  @IsInt() // Changed to IsInt for consistency with CreateTaskInput, or IsNumber if float allowed? Usually priority is int.
-  priorityLevel?: number;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  category?: string;
-}
-
-@InputType()
 export class TaskSortInput {
   @Field({ nullable: true })
   @IsOptional()
