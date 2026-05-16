@@ -1,4 +1,3 @@
-import { Field, InputType } from '@nestjs/graphql';
 import {
   IsNotEmpty,
   IsString,
@@ -8,7 +7,6 @@ import {
   IsArray,
   IsOptional,
 } from 'class-validator';
-import { TaskStatus } from '../entities/task-status.enum';
 import { SubtaskInput } from '../entities/task.entity';
 
 export class CreateTaskDto {
@@ -48,16 +46,4 @@ export class CreateTaskDto {
   @IsArray()
   @IsString({ each: true })
   tagIds: string[];
-}
-
-@InputType()
-export class TaskFilterInput {
-  @Field(() => TaskStatus, { nullable: true })
-  status?: TaskStatus;
-
-  @Field(() => Number, { nullable: true })
-  priorityLevel?: number;
-
-  @Field(() => String, { nullable: true })
-  category?: string;
 }

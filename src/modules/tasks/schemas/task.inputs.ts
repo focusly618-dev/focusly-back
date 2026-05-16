@@ -220,20 +220,23 @@ export class UpdateTaskInput extends PartialType(CreateTaskInput) {
 
 @InputType()
 export class TaskFilterInput {
-  @Field(() => TaskStatus, { nullable: true })
+  @Field(() => [TaskStatus], { nullable: true })
   @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
+  @IsArray()
+  @IsEnum(TaskStatus, { each: true })
+  status?: TaskStatus[];
 
-  @Field(() => Number, { nullable: true })
+  @Field(() => [Int], { nullable: true })
   @IsOptional()
-  @IsInt()
-  priorityLevel?: number;
+  @IsArray()
+  @IsInt({ each: true })
+  priorityLevel?: number[];
 
-  @Field(() => String, { nullable: true })
+  @Field(() => [String], { nullable: true })
   @IsOptional()
-  @IsString()
-  category?: string;
+  @IsArray()
+  @IsString({ each: true })
+  category?: string[];
 
   @Field({ nullable: true })
   @IsOptional()

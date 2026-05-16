@@ -5,6 +5,7 @@ import * as admin from 'firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import { TaskFilterInput, TaskSortInput } from './schemas/task.inputs';
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
+import { TaskStatus } from './schemas/task-status.enum';
 
 @Injectable()
 export class TasksService {
@@ -96,15 +97,21 @@ export class TasksService {
     const snapshot = await this.collection.where('deletedAt', '==', null).get();
     let tasks = snapshot.docs.map((doc) => this.mapToTask(doc.data()));
 
-    if (filters.status) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-      tasks = tasks.filter((t) => t.status === filters.status);
+    if (filters.status && filters.status.length > 0) {
+      tasks = tasks.filter((t) => {
+        const currentStatus = (t.status as TaskStatus) || TaskStatus.Todo;
+        return filters.status!.includes(currentStatus);
+      });
     }
-    if (filters.priorityLevel) {
-      tasks = tasks.filter((t) => t.priorityLevel === filters.priorityLevel);
+    if (filters.priorityLevel && filters.priorityLevel.length > 0) {
+      tasks = tasks.filter((t) =>
+        filters.priorityLevel!.includes(t.priorityLevel),
+      );
     }
-    if (filters.category) {
-      tasks = tasks.filter((t) => t.category === filters.category);
+    if (filters.category && filters.category.length > 0) {
+      tasks = tasks.filter((t) =>
+        filters.category!.includes(t.category as string),
+      );
     }
 
     if (sort && sort.sort) {
@@ -182,22 +189,30 @@ export class TasksService {
     let tasks = snapshot.docs.map((doc) => this.mapToTask(doc.data()));
 
     if (filters) {
-      if (filters.status) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        tasks = tasks.filter((t) => t.status === filters.status);
+      if (filters.status && filters.status.length > 0) {
+        tasks = tasks.filter((t) => {
+          const currentStatus = (t.status as TaskStatus) || TaskStatus.Todo;
+          return filters.status!.includes(currentStatus);
+        });
       }
-      if (filters.priorityLevel !== undefined) {
-        // High priority is >= 3 (can be 3, 4, etc.), lower levels use exact match
-        if (filters.priorityLevel >= 3) {
-          tasks = tasks.filter((t) => t.priorityLevel >= 3);
-        } else {
+      if (filters.priorityLevel && filters.priorityLevel.length > 0) {
+        // High priority check: if any filter is 3, include all >= 3
+        if (filters.priorityLevel.some((p) => p >= 3)) {
           tasks = tasks.filter(
-            (t) => t.priorityLevel === filters.priorityLevel,
+            (t) =>
+              t.priorityLevel >= 3 ||
+              filters.priorityLevel!.includes(t.priorityLevel),
+          );
+        } else {
+          tasks = tasks.filter((t) =>
+            filters.priorityLevel!.includes(t.priorityLevel),
           );
         }
       }
-      if (filters.category) {
-        tasks = tasks.filter((t) => t.category === filters.category);
+      if (filters.category && filters.category.length > 0) {
+        tasks = tasks.filter((t) =>
+          filters.category!.includes(t.category as string),
+        );
       }
       if (filters.startDate) {
         const start = new Date(filters.startDate).getTime();

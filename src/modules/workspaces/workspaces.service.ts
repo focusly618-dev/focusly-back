@@ -149,13 +149,19 @@ export class WorkspacesService {
     };
 
     // Explicitly handle emoji and background_color persistence/removal
-    if (updateWorkspaceInput.emoji === null || updateWorkspaceInput.emoji === '') {
+    if (
+      updateWorkspaceInput.emoji === null ||
+      updateWorkspaceInput.emoji === ''
+    ) {
       updateData.emoji = admin.firestore.FieldValue.delete();
     } else if (updateWorkspaceInput.emoji) {
       updateData.emoji = updateWorkspaceInput.emoji;
     }
 
-    if (updateWorkspaceInput.background_color === null || updateWorkspaceInput.background_color === 'none') {
+    if (
+      updateWorkspaceInput.background_color === null ||
+      updateWorkspaceInput.background_color === 'none'
+    ) {
       updateData.background_color = admin.firestore.FieldValue.delete();
     } else if (updateWorkspaceInput.background_color) {
       updateData.background_color = updateWorkspaceInput.background_color;
@@ -164,7 +170,8 @@ export class WorkspacesService {
     if (updateWorkspaceInput.card_show_background === null) {
       updateData.card_show_background = admin.firestore.FieldValue.delete();
     } else if (updateWorkspaceInput.card_show_background !== undefined) {
-      updateData.card_show_background = updateWorkspaceInput.card_show_background;
+      updateData.card_show_background =
+        updateWorkspaceInput.card_show_background;
     }
 
     // Remove id from updateData if present
@@ -191,6 +198,11 @@ export class WorkspacesService {
     // Handle unlinking (null taskId)
     if (updateWorkspaceInput.taskId === null) {
       updateData.taskId = admin.firestore.FieldValue.delete();
+    }
+
+    // Handle folder unlinking (null folderId)
+    if (updateWorkspaceInput.folderId === null) {
+      updateData.folderId = admin.firestore.FieldValue.delete();
     }
 
     // Remove undefined fields to avoid overwriting with undefined
