@@ -5,12 +5,13 @@ import {
   Resolver,
   ResolveField,
   Parent,
+  Int,
 } from '@nestjs/graphql';
 import { UseGuards, Inject, forwardRef } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 
-import { Task } from './schemas/task.schema';
+import { Task, PaginatedTasks } from './schemas/task.schema';
 import { Workspace } from '../workspaces/schemas/workspace.schema';
 import { TaskStatus } from './schemas/task-status.enum';
 import {
@@ -64,6 +65,17 @@ export class TasksResolver {
     @Args('sort', { nullable: true }) sort?: TaskSortInput,
   ): Promise<ITask[]> {
     return this.tasksService.findAllByUser(userId, filters, sort);
+  }
+
+  @Query(() => PaginatedTasks)
+  async getTasksByUserPaginated(
+    @Args('userId') userId: string,
+    @Args('filters', { nullable: true }) filters?: TaskFilterInput,
+    @Args('sort', { nullable: true }) sort?: TaskSortInput,
+    @Args('offset', { type: () => Int, nullable: true }) offset?: number,
+    @Args('limit', { type: () => Int, nullable: true }) limit?: number,
+  ): Promise<{ tasks: ITask[]; totalCount: number }> {
+    return this.tasksService.findPaginatedByUser(userId, filters, sort, offset, limit);
   }
 
   @Query(() => Task)
