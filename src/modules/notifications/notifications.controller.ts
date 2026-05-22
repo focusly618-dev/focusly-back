@@ -12,7 +12,7 @@ export class NotificationsController {
     return this.notificationsService.create({
       ...createDto,
       scheduledAt: new Date(createDto.scheduledAt),
-    } as Partial<INotification>);
+    });
   }
 
   @Get()

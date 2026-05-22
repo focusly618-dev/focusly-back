@@ -112,7 +112,7 @@ export const googleTaskPipeline = new Pipeline<
       // We use ISO string for dates as the frontend expects string (deadline)
       deadline: deadline.toISOString(),
       estimated_start_date: start.toISOString(),
-      status: 'Scheduled' as ITask['status'],
+      status: 'Scheduled',
       priority_level: 3, // Default priority
       subtasks: [],
       tags: [],

@@ -6,7 +6,11 @@ import { TasksModule } from '../tasks/tasks.module';
 import { FoldersModule } from '../folders/folders.module';
 
 @Module({
-  imports: [FirebaseModule, forwardRef(() => TasksModule), forwardRef(() => FoldersModule)],
+  imports: [
+    FirebaseModule,
+    forwardRef(() => TasksModule),
+    forwardRef(() => FoldersModule),
+  ],
   providers: [WorkspacesResolver, WorkspacesService],
   exports: [WorkspacesService],
 })

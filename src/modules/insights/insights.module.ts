@@ -6,7 +6,7 @@ import { FocusSessionsModule } from '../focus-sessions/focus-sessions.module';
 import { UsersModule } from '../users/users.module';
 
 @Module({
-    imports: [TasksModule, FocusSessionsModule, UsersModule],
-    providers: [InsightsService, InsightsResolver],
+  imports: [TasksModule, FocusSessionsModule, UsersModule],
+  providers: [InsightsService, InsightsResolver],
 })
-export class InsightsModule { }
+export class InsightsModule {}

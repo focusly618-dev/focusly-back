@@ -13,7 +13,7 @@ export class TimeBlocksController {
       ...createDto,
       startTime: new Date(createDto.startTime),
       endTime: new Date(createDto.endTime),
-    } as Partial<ITimeBlock>);
+    });
   }
 
   @Get()
