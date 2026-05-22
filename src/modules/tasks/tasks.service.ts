@@ -214,16 +214,25 @@ export class TasksService {
           filters.category!.includes(t.category as string),
         );
       }
-      if (filters.startDate) {
-        const start = new Date(filters.startDate).getTime();
-        tasks = tasks.filter(
-          (t) => t.deadline && new Date(t.deadline).getTime() >= start,
-        );
+      if (filters.startDate || filters.endDate) {
+        tasks = tasks.filter((t) => {
+          const dateToUse =
+            t.status === 'Done' || !t.deadline
+              ? t.createdAt || t.updatedAt
+              : t.deadline;
+          if (!dateToUse) return false;
+          const time = new Date(dateToUse).getTime();
+          if (filters.startDate && time < new Date(filters.startDate).getTime()) return false;
+          if (filters.endDate && time > new Date(filters.endDate).getTime()) return false;
+          return true;
+        });
       }
-      if (filters.endDate) {
-        const end = new Date(filters.endDate).getTime();
+      if (filters.searchTerm) {
+        const term = filters.searchTerm.toLowerCase();
         tasks = tasks.filter(
-          (t) => t.deadline && new Date(t.deadline).getTime() <= end,
+          (t) =>
+            t.title.toLowerCase().includes(term) ||
+            t.notesEncrypted?.toLowerCase().includes(term),
         );
       }
     }
@@ -262,6 +271,105 @@ export class TasksService {
     console.log('findAllByUser - Filters:', JSON.stringify(filters, null, 2));
     console.log('findAllByUser - Sort:', JSON.stringify(sort, null, 2));
     return tasks;
+  }
+
+  async findPaginatedByUser(
+    userId: string,
+    filters?: TaskFilterInput,
+    sort?: TaskSortInput,
+    offset?: number,
+    limit?: number,
+  ): Promise<{ tasks: ITask[]; totalCount: number }> {
+    const snapshot = await this.collection
+      .where('userId', '==', userId)
+      .where('deletedAt', '==', null)
+      .get();
+
+    let tasks = snapshot.docs.map((doc) => this.mapToTask(doc.data()));
+
+    if (filters) {
+      if (filters.status && filters.status.length > 0) {
+        tasks = tasks.filter((t) => {
+          const currentStatus = (t.status as TaskStatus) || TaskStatus.Todo;
+          return filters.status!.includes(currentStatus);
+        });
+      }
+      if (filters.priorityLevel && filters.priorityLevel.length > 0) {
+        if (filters.priorityLevel.some((p) => p >= 3)) {
+          tasks = tasks.filter(
+            (t) =>
+              t.priorityLevel >= 3 ||
+              filters.priorityLevel!.includes(t.priorityLevel),
+          );
+        } else {
+          tasks = tasks.filter((t) =>
+            filters.priorityLevel!.includes(t.priorityLevel),
+          );
+        }
+      }
+      if (filters.category && filters.category.length > 0) {
+        tasks = tasks.filter((t) =>
+          filters.category!.includes(t.category as string),
+        );
+      }
+      if (filters.startDate || filters.endDate) {
+        tasks = tasks.filter((t) => {
+          const dateToUse =
+            t.status === 'Done' || !t.deadline
+              ? t.createdAt || t.updatedAt
+              : t.deadline;
+          if (!dateToUse) return false;
+          const time = new Date(dateToUse).getTime();
+          if (filters.startDate && time < new Date(filters.startDate).getTime()) return false;
+          if (filters.endDate && time > new Date(filters.endDate).getTime()) return false;
+          return true;
+        });
+      }
+      if (filters.searchTerm) {
+        const term = filters.searchTerm.toLowerCase();
+        tasks = tasks.filter(
+          (t) =>
+            t.title.toLowerCase().includes(term) ||
+            t.notesEncrypted?.toLowerCase().includes(term),
+        );
+      }
+    }
+
+    if (sort && sort.sort) {
+      const fieldMap: Record<string, keyof ITask> = {
+        deadline: 'deadline',
+        priority_level: 'priorityLevel',
+        estimate_minutes: 'estimateTimer',
+        created_at: 'createdAt',
+      };
+      const field = fieldMap[sort.sort] || (sort.sort as keyof ITask);
+      const direction = sort.order?.toLowerCase() === 'desc' ? -1 : 1;
+
+      tasks.sort((a, b) => {
+        let valA = a[field];
+        let valB = b[field];
+
+        if (valA instanceof Date) valA = valA.getTime();
+        if (valB instanceof Date) valB = valB.getTime();
+
+        if (valA === undefined || valA === null) return 1;
+        if (valB === undefined || valB === null) return -1;
+
+        if (valA < valB) return -1 * direction;
+        if (valA > valB) return 1 * direction;
+        return 0;
+      });
+    }
+
+    const totalCount = tasks.length;
+    const startIdx = offset || 0;
+    const endIdx = limit !== undefined && limit !== null ? startIdx + limit : totalCount;
+    const paginatedTasks = tasks.slice(startIdx, endIdx);
+
+    return {
+      tasks: paginatedTasks,
+      totalCount,
+    };
   }
 
   async findOne(id: string): Promise<ITask> {

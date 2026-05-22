@@ -247,6 +247,11 @@ export class TaskFilterInput {
   @IsOptional()
   @IsString()
   endDate?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  searchTerm?: string;
 }
 
 @InputType()

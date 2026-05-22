@@ -155,3 +155,12 @@ export class Task {
   @Field(() => [Collaborator], { defaultValue: [], nullable: true })
   collaborators?: Collaborator[];
 }
+
+@ObjectType()
+export class PaginatedTasks {
+  @Field(() => [Task])
+  tasks: Task[];
+
+  @Field(() => Int)
+  totalCount: number;
+}
