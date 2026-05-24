@@ -95,6 +95,7 @@ export class TasksResolver {
       estimated_end_date,
       collaborators,
       color,
+      preferredTimeOfDay,
       ...rest
     } = createTaskInput;
 
@@ -122,6 +123,11 @@ export class TasksResolver {
         ? new Date(estimated_end_date)
         : undefined,
       collaborators: collaborators?.map((p) => ({ ...p })),
+      preferredTimeOfDay: preferredTimeOfDay as
+        | 'morning'
+        | 'afternoon'
+        | 'evening'
+        | 'any',
     };
     return this.tasksService.create(taskData);
   }
@@ -184,6 +190,7 @@ export class TasksResolver {
 
     if (rest.task_type !== undefined)
       updateData.task_type = rest.task_type as ITask['task_type'];
+    if (rest.use_ai !== undefined) updateData.use_ai = rest.use_ai;
     if (rest.source !== undefined)
       updateData.source = rest.source as ITask['source'];
     if (rest.sync_status !== undefined)
@@ -192,6 +199,17 @@ export class TasksResolver {
     if (rest.category !== undefined) updateData.category = rest.category;
     if (rest.title !== undefined) updateData.title = rest.title;
     if (rest.color !== undefined) updateData.color = rest.color;
+    if (rest.isSplitable !== undefined)
+      updateData.isSplitable = rest.isSplitable;
+    if (rest.minBlockDuration !== undefined)
+      updateData.minBlockDuration = rest.minBlockDuration;
+    if (rest.preferredTimeOfDay !== undefined)
+      updateData.preferredTimeOfDay = rest.preferredTimeOfDay as
+        | 'morning'
+        | 'afternoon'
+        | 'evening'
+        | 'any';
+    if (rest.isLocked !== undefined) updateData.isLocked = rest.isLocked;
     if (rest.subtasks !== undefined) {
       updateData.subtasks = rest.subtasks.map((st: SubtaskFromFrontend) => ({
         title: st.title,
@@ -214,6 +232,14 @@ export class TasksResolver {
   @Mutation(() => Boolean) // return boolean for delete? Service returns void.
   async deleteTask(@Args('id') id: string): Promise<boolean> {
     await this.tasksService.delete(id);
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  async deleteTasks(
+    @Args('ids', { type: () => [String] }) ids: string[],
+  ): Promise<boolean> {
+    await this.tasksService.deleteMany(ids);
     return true;
   }
 

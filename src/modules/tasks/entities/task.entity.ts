@@ -223,4 +223,7 @@ export class Task {
 
   @Field({ name: 'estimated_end_date', nullable: true })
   estimatedEndDate?: Date;
+
+  @Field({ name: 'use_ai', nullable: true })
+  use_ai?: boolean;
 }

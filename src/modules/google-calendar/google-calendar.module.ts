@@ -3,9 +3,10 @@ import { GoogleCalendarController } from './google-calendar.controller';
 import { GoogleCalendarService } from './google-calendar.service';
 import { AuthModule } from '../auth/auth.module';
 import { TasksModule } from '../tasks/tasks.module';
+import { TimeBlocksModule } from '../time-blocks/time-blocks.module';
 
 @Module({
-  imports: [AuthModule, forwardRef(() => TasksModule)],
+  imports: [AuthModule, forwardRef(() => TasksModule), TimeBlocksModule],
   controllers: [GoogleCalendarController],
   providers: [GoogleCalendarService],
   exports: [GoogleCalendarService],

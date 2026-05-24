@@ -16,7 +16,8 @@ import { processGoogleEvent } from './utils/google-calendar.pipeline';
 import { TasksService } from '../tasks/tasks.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { GoogleEvent } from './interfaces/google-calendar.interfaces';
-import { ITask } from '../tasks/interfaces/task.interface';
+import { TimeBlocksService } from '../time-blocks/time-blocks.service';
+import { SchedulerService } from '../tasks/scheduler.service';
 
 /**
  * Normalizes a Google Event ID by removing leading underscores.
@@ -39,6 +40,8 @@ export class GoogleCalendarController {
     private readonly googleCalendarService: GoogleCalendarService,
     @Inject(forwardRef(() => TasksService))
     private readonly tasksService: TasksService,
+    private readonly timeBlocksService: TimeBlocksService,
+    private readonly schedulerService: SchedulerService,
   ) {}
 
   @Get('events')
@@ -59,8 +62,8 @@ export class GoogleCalendarController {
 
     if (!rawData.items) return [];
 
-    // 1. Get already synced Google Event IDs from the database
-    const syncedIds = await this.tasksService.getSyncedGoogleIds(userId);
+    // 1. Get already synced Google Event IDs from the database (now from time_blocks collection)
+    const syncedIds = await this.timeBlocksService.getSyncedGoogleIds(userId);
     const normalizedSyncedIds = new Set(syncedIds.map((id) => normalizeId(id)));
 
     // 2. Filter out events that already exist in our DB
@@ -78,37 +81,47 @@ export class GoogleCalendarController {
       filteredItems.map((event) => processGoogleEvent(event)),
     );
 
-    // 4. Automatically save them to the database
-    const savedTasks = await Promise.all(
-      processedEvents.map(async (event) => {
-        const taskData = {
-          userId,
-          title: event.title,
-          notesEncrypted: event.notes_encrypted,
-          estimateTimer: event.estimate_timer,
-          priorityLevel: event.priority_level,
-          estimated_start_date: event.estimated_start_date
-            ? new Date(event.estimated_start_date)
-            : undefined,
-          estimated_end_date: event.estimated_end_date
-            ? new Date(event.estimated_end_date)
-            : undefined,
-          deadline: new Date(event.deadline),
-          status: event.status,
-          subtasks: event.subtasks,
-          tags: event.tags,
-          links: event.links,
-          task_type: 'PlatformTask',
-          google_event_id: event.google_event_id,
-          source: 'google',
-          sync_status: 'synced',
-          collaborators: event.collaborators,
-        };
-        return this.tasksService.create(taskData as ITask);
-      }),
-    );
+    // 4. Automatically save them to the time_blocks collection
+    const timeBlocksToSave = processedEvents.map((event) => {
+      const isMeeting =
+        (event.links &&
+          event.links.some(
+            (l) =>
+              l.url.includes('meet.google.com') ||
+              l.url.includes('zoom.us') ||
+              l.url.includes('teams.microsoft.com'),
+          )) ||
+        (event.collaborators && event.collaborators.length > 1);
 
-    return savedTasks;
+      return {
+        userId,
+        title: event.title,
+        startTime: new Date(event.estimated_start_date),
+        endTime: new Date(event.deadline),
+        blockType: isMeeting ? 'Meeting' : 'External_Event',
+        externalEventId: event.google_event_id,
+        source: 'Google' as const,
+        isLocked: true,
+        meetingUrl:
+          event.links && event.links.length > 0
+            ? event.links[0].url
+            : undefined,
+        attendees: event.collaborators?.map((c) => ({
+          email: c.email,
+          responseStatus: c.responseStatus,
+          name: c.name || '',
+        })),
+      };
+    });
+
+    if (timeBlocksToSave.length > 0) {
+      await this.timeBlocksService.createMany(timeBlocksToSave);
+
+      // Trigger backend scheduler to recalculate optimal task allocations around the new calendar blocks
+      await this.schedulerService.scheduleUserTasks(userId);
+    }
+
+    return processedEvents;
   }
 
   @Post('events')

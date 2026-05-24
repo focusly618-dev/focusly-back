@@ -25,4 +25,9 @@ export class TimeBlocksController {
   async findOne(@Param('id') id: string): Promise<ITimeBlock> {
     return this.timeBlocksService.findOne(id);
   }
+
+  @Get('user/:userId')
+  async findAllByUser(@Param('userId') userId: string): Promise<ITimeBlock[]> {
+    return this.timeBlocksService.findAllByUser(userId);
+  }
 }

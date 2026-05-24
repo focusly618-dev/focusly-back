@@ -154,4 +154,19 @@ export class Task {
 
   @Field(() => [Collaborator], { defaultValue: [], nullable: true })
   collaborators?: Collaborator[];
+
+  @Field({ name: 'use_ai', nullable: true })
+  use_ai?: boolean;
+
+  @Field({ name: 'is_splitable', nullable: true })
+  isSplitable?: boolean;
+
+  @Field(() => Int, { name: 'min_block_duration', nullable: true })
+  minBlockDuration?: number;
+
+  @Field({ name: 'preferred_time_of_day', nullable: true })
+  preferredTimeOfDay?: string;
+
+  @Field({ name: 'is_locked', nullable: true })
+  isLocked?: boolean;
 }

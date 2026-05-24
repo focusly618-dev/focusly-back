@@ -59,4 +59,9 @@ export interface ITask {
   }[];
   notified?: boolean;
   lastMinuteNotified?: boolean;
+  use_ai?: boolean;
+  isSplitable?: boolean;
+  minBlockDuration?: number;
+  preferredTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'any';
+  isLocked?: boolean;
 }
