@@ -536,7 +536,6 @@ export class SchedulerService {
     }
 
     // Check if on preferred day
-    const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     return Math.min(score, 1);
   }
 

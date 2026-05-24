@@ -1,4 +1,4 @@
-import { Field, ID, Int, ObjectType, InputType } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { Tag } from '../../tags/entities/tag.entity';
 import { TaskStatus } from './task-status.enum';
 import { Workspace } from '../../workspaces/entities/workspace.entity';

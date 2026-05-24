@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsDateString,
   IsEnum,
-  IsBoolean,
 } from 'class-validator';
 
 export class CreateTimeBlockDto {
