@@ -6,31 +6,15 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Request,
   UseGuards,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { GoogleCalendarService } from './google-calendar.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { processGoogleEvent } from './utils/google-calendar.pipeline';
 import { TasksService } from '../tasks/tasks.service';
-import { Inject, forwardRef } from '@nestjs/common';
-import { GoogleEvent } from './interfaces/google-calendar.interfaces';
 import { SchedulerService } from '../tasks/scheduler.service';
-
-/**
- * Normalizes a Google Event ID by removing leading underscores.
- * Matches the logic used in the frontend mapper.
- */
-const normalizeId = (id: string | null | undefined): string => {
-  if (!id) return '';
-  return id.replace(/^_+/, '');
-};
-
-const getBaseId = (id: string | null | undefined): string => {
-  if (!id) return '';
-  return normalizeId(id).split('_')[0];
-};
 
 @Controller('google-calendar')
 @UseGuards(JwtAuthGuard)
@@ -43,82 +27,65 @@ export class GoogleCalendarController {
   ) {}
 
   @Get('events')
-  async getEvents(
-    @Request() req: any,
-    @Query('timeMin') timeMin?: string,
-    @Query('timeMax') timeMax?: string,
-  ) {
+  async getEvents(@Request() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = req.user.userId as string;
-    const rawData = (await this.googleCalendarService.getEvents(
-      userId,
-      timeMin,
-      timeMax,
-    )) as {
-      items?: GoogleEvent[];
-    };
 
-    if (!rawData.items) return [];
+    // 1. Ejecutar la sincronización (Incremental o Completa)
+    await this.googleCalendarService.syncCalendar(userId);
 
-    // 1. Get already synced Google Event IDs from the tasks collection
-    const syncedIds = await this.tasksService.getSyncedGoogleIds(userId);
-    const normalizedSyncedIds = new Set(syncedIds.map((id) => normalizeId(id)));
+    // 2. Obtener todas las tareas de tipo GoogleTask de la base de datos local
+    const userTasks = await this.tasksService.findAllByUser(userId);
+    const googleTasks = userTasks.filter((t) => t.task_type === 'GoogleTask');
 
-    // 2. Filter out events that already exist in our DB
-    const filteredItems = rawData.items.filter((item) => {
-      const normalizedEventId = normalizeId(item.id);
-      const baseEventId = getBaseId(item.id);
-      return (
-        !normalizedSyncedIds.has(normalizedEventId) &&
-        !normalizedSyncedIds.has(baseEventId)
-      );
-    });
-
-    // 3. Process the remaining events through the pipeline
-    const processedEvents = await Promise.all(
-      filteredItems.map((event) => processGoogleEvent(event)),
-    );
-
-    // 4. Automatically save them as Tasks (not time_blocks)
-    const tasksToSave = processedEvents.map((event) => ({
-      user_id: userId,
-      title: event.title,
-      notes_encrypted: event.notes_encrypted || '',
-      deadline: new Date(event.deadline),
-      status: 'Scheduled' as const,
-      priority_level: event.priority_level || 2,
-      estimate_timer: event.estimate_timer || 30,
-      category: 'Meeting',
-      google_event_id: event.google_event_id,
-      task_type: 'GoogleTask' as const,
-      source: 'google' as const,
-      estimated_start_date: new Date(event.estimated_start_date),
-      estimated_end_date: new Date(event.deadline),
-      tags: event.tags || [],
-      links: event.links || [],
-      collaborators: event.collaborators || [],
+    // 3. Normalizar y retornar en el formato esperado por el frontend
+    const mappedEvents = googleTasks.map((t) => ({
+      id: t.id,
+      google_event_id: t.google_event_id,
+      title: t.title,
+      notes_encrypted: t.notesEncrypted || '',
+      deadline: t.deadline
+        ? t.deadline.toISOString()
+        : new Date().toISOString(),
+      estimated_start_date: t.estimated_start_date
+        ? t.estimated_start_date.toISOString()
+        : new Date().toISOString(),
+      estimated_end_date: t.estimated_end_date
+        ? t.estimated_end_date.toISOString()
+        : undefined,
+      status: t.status,
+      priority_level: t.priorityLevel || 1,
+      tags: t.tags || [],
+      links: t.links || [],
+      estimate_timer: t.estimateTimer || 30,
+      task_type: t.task_type,
+      is_all_day: false, // se puede deducir o mapear según requiera el frontend
+      created_at: t.createdAt
+        ? t.createdAt.toISOString()
+        : new Date().toISOString(),
+      updated_at: t.updatedAt
+        ? t.updatedAt.toISOString()
+        : new Date().toISOString(),
     }));
 
-    if (tasksToSave.length > 0) {
-      for (const taskData of tasksToSave) {
-        await this.tasksService.create(taskData);
-      }
-
-      // Trigger backend scheduler to recalculate optimal task allocations
-      await this.schedulerService.scheduleUserTasks(userId);
-    }
-
-    return processedEvents;
+    return mappedEvents;
   }
 
   @Post('events')
   async createEvent(@Request() req: any, @Body() event: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = req.user.userId as string;
-    return (await this.googleCalendarService.createEvent(
+
+    // Crear en Google Calendar
+    const googleEvent = await this.googleCalendarService.createEvent(
       userId,
       event,
-    )) as Promise<unknown>;
+    );
+
+    // Forzar sincronización inmediata para reflejar en DB y notificar clientes
+    await this.googleCalendarService.syncCalendar(userId);
+
+    return googleEvent;
   }
 
   @Patch('events/:id')
@@ -129,18 +96,31 @@ export class GoogleCalendarController {
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = req.user.userId as string;
-    return (await this.googleCalendarService.patchEvent(
+
+    // Actualizar en Google Calendar
+    const googleEvent = await this.googleCalendarService.patchEvent(
       userId,
       eventId,
       event,
-    )) as Promise<unknown>;
+    );
+
+    // Forzar sincronización inmediata
+    await this.googleCalendarService.syncCalendar(userId);
+
+    return googleEvent;
   }
 
   @Delete('events/:id')
   async removeEvent(@Request() req: any, @Param('id') eventId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = req.user.userId as string;
+
+    // Eliminar en Google Calendar
     await this.googleCalendarService.deleteEvent(userId, eventId);
+
+    // Forzar sincronización inmediata
+    await this.googleCalendarService.syncCalendar(userId);
+
     return { success: true };
   }
 }

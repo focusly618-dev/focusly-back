@@ -8,6 +8,7 @@ import * as admin from 'firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import { SchedulerService as NewSchedulerService } from '../scheduling/services/scheduler.service';
 import { MigrationService } from '../scheduling/services/migration.service';
+import { RealTimeGateway } from '../real-time/real-time.gateway';
 import {
   ExternalCalendarEvent,
   Meeting,
@@ -25,6 +26,7 @@ export class SchedulerService {
     private readonly timeBlocksService: TimeBlocksService,
     private readonly newSchedulerService: NewSchedulerService,
     private readonly migrationService: MigrationService,
+    private readonly realTimeGateway: RealTimeGateway,
   ) {}
 
   /**
@@ -134,6 +136,12 @@ export class SchedulerService {
 
       // 6. Apply scheduling results to database
       await this.applySchedulingResults(schedulingResult, userId);
+
+      // 7. Notify client via WebSockets
+      this.realTimeGateway.emitScheduleUpdate(userId, {
+        type: 'SCHEDULE_RECALCULATED',
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('[SCHEDULER] Error running Motion-style scheduler:', error);
       // Fallback to legacy scheduler if new one fails
@@ -181,9 +189,7 @@ export class SchedulerService {
     // 2. Fetch all fixed constraints (Meetings and External Events)
     const timeBlocks = await this.timeBlocksService.findAllByUser(userId);
     const fixedBlocks = timeBlocks.filter(
-      (b) =>
-        b.blockType === 'Meeting' ||
-        b.blockType === 'External_Event',
+      (b) => b.blockType === 'Meeting' || b.blockType === 'External_Event',
     );
 
     // 3. Fetch all active, unlocked tasks
@@ -392,6 +398,12 @@ export class SchedulerService {
       });
     });
     await batch.commit();
+
+    // Notify client via WebSockets
+    this.realTimeGateway.emitScheduleUpdate(userId, {
+      type: 'SCHEDULE_RECALCULATED',
+      timestamp: new Date().toISOString(),
+    });
 
     console.log(
       `[SCHEDULER] Completed scheduling. Created ${generatedFocusBlocks.length} Focus Blocks.`,

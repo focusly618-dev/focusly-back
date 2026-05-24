@@ -59,7 +59,13 @@ export class TasksResolver {
     @Args('offset', { type: () => Int, nullable: true }) offset?: number,
     @Args('limit', { type: () => Int, nullable: true }) limit?: number,
   ): Promise<{ tasks: ITask[]; totalCount: number }> {
-    return this.tasksService.findPaginatedByUser(userId, filters, sort, offset, limit);
+    return this.tasksService.findPaginatedByUser(
+      userId,
+      filters,
+      sort,
+      offset,
+      limit,
+    );
   }
 
   @Query(() => Task)

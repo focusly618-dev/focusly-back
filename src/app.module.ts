@@ -21,6 +21,7 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { FoldersModule } from './modules/folders/folders.module';
 import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RealTimeModule } from './modules/real-time/real-time.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     InsightsModule,
     FoldersModule,
     GoogleCalendarModule,
+    RealTimeModule,
   ],
   controllers: [AppController],
   providers: [

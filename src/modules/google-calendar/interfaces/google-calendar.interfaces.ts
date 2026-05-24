@@ -30,6 +30,7 @@ export interface GoogleEvent {
   };
   location?: string;
   colorId?: string;
+  status?: string;
 }
 
 export interface ProcessedGoogleTask {

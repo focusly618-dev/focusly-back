@@ -234,8 +234,10 @@ export class TasksService {
               : t.deadline;
           if (!dateToUse) return false;
           const time = new Date(dateToUse).getTime();
-          if (filters.startDate && time < new Date(filters.startDate).getTime()) return false;
-          if (filters.endDate && time > new Date(filters.endDate).getTime()) return false;
+          if (filters.startDate && time < new Date(filters.startDate).getTime())
+            return false;
+          if (filters.endDate && time > new Date(filters.endDate).getTime())
+            return false;
           return true;
         });
       }
@@ -332,8 +334,10 @@ export class TasksService {
               : t.deadline;
           if (!dateToUse) return false;
           const time = new Date(dateToUse).getTime();
-          if (filters.startDate && time < new Date(filters.startDate).getTime()) return false;
-          if (filters.endDate && time > new Date(filters.endDate).getTime()) return false;
+          if (filters.startDate && time < new Date(filters.startDate).getTime())
+            return false;
+          if (filters.endDate && time > new Date(filters.endDate).getTime())
+            return false;
           return true;
         });
       }
@@ -375,7 +379,8 @@ export class TasksService {
 
     const totalCount = tasks.length;
     const startIdx = offset || 0;
-    const endIdx = limit !== undefined && limit !== null ? startIdx + limit : totalCount;
+    const endIdx =
+      limit !== undefined && limit !== null ? startIdx + limit : totalCount;
     const paginatedTasks = tasks.slice(startIdx, endIdx);
 
     return {
