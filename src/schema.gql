@@ -66,20 +66,6 @@ enum TaskStatus {
   Archived
 }
 
-type Subtask {
-  title: String!
-  completed: Boolean!
-  timer: Int!
-  notes_encrypted: String
-  estimate_timer: Int
-  priority_level: Int
-  status: String
-  deadline: DateTime
-  category: String
-  color: String
-  links: [TaskLink!]!
-}
-
 type TaskLink {
   title: String!
   url: String!
@@ -99,7 +85,6 @@ type Task {
   status: TaskStatus!
   completed_at: DateTime
   duration: DateTime
-  subtasks: [Subtask!]!
   created_at: DateTime!
   updated_at: DateTime!
   deleted_at: DateTime
@@ -202,7 +187,6 @@ type Mutation {
   deleteWorkspaceTasks(workspaceId: String!): Boolean!
   updateTask(updateTaskInput: UpdateTaskInput!): Task!
   deleteTask(id: String!): Boolean!
-  addSubtask(taskId: String!, subtask: SubtaskInput!): Task!
   createWorkspace(createWorkspaceInput: CreateWorkspaceInput!): Workspace!
   updateWorkspace(updateWorkspaceInput: UpdateWorkspaceInput!): Workspace!
   removeWorkspace(id: ID!): Boolean!
@@ -225,7 +209,6 @@ input CreateTaskInput {
   category: String!
   color: String
   status: TaskStatus
-  subtasks: [SubtaskInput!]!
   tags: [String!]!
   links: [LinkInput!]
   task_type: String
@@ -235,20 +218,6 @@ input CreateTaskInput {
   source: String
   sync_status: String
   collaborators: [CollaboratorInput!]
-}
-
-input SubtaskInput {
-  title: String!
-  completed: Boolean!
-  timer: Int!
-  notes_encrypted: String
-  estimate_timer: Int
-  priority_level: Int
-  status: TaskStatus
-  deadline: String
-  category: String
-  color: String
-  links: [LinkInput!]
 }
 
 input LinkInput {
@@ -275,7 +244,6 @@ input UpdateTaskInput {
   category: String
   color: String
   status: TaskStatus
-  subtasks: [SubtaskInput!]
   tags: [String!]
   links: [LinkInput!]
   task_type: String

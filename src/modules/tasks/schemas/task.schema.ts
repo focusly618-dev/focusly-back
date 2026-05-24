@@ -31,42 +31,6 @@ export class TaskFilters {
 }
 
 @ObjectType()
-export class Subtask {
-  @Field()
-  title: string;
-
-  @Field()
-  completed: boolean;
-
-  @Field(() => Int)
-  timer: number;
-
-  @Field({ name: 'notes_encrypted', nullable: true })
-  notesEncrypted?: string;
-
-  @Field(() => Int, { name: 'estimate_timer', nullable: true })
-  estimateTimer?: number;
-
-  @Field(() => Int, { name: 'priority_level', nullable: true })
-  priorityLevel?: number;
-
-  @Field({ nullable: true })
-  status?: string;
-
-  @Field({ nullable: true })
-  deadline?: Date;
-
-  @Field({ nullable: true })
-  category?: string;
-
-  @Field({ nullable: true })
-  color?: string;
-
-  @Field(() => [TaskLink], { defaultValue: [] })
-  links: TaskLink[];
-}
-
-@ObjectType()
 export class TaskLink {
   @Field()
   title: string;
@@ -116,9 +80,6 @@ export class Task {
   @Field({ nullable: true })
   duration?: Date;
 
-  @Field(() => [Subtask])
-  subtasks: Subtask[];
-
   @Field({ name: 'created_at' })
   createdAt: Date;
 
@@ -157,18 +118,6 @@ export class Task {
 
   @Field({ name: 'use_ai', nullable: true })
   use_ai?: boolean;
-
-  @Field({ name: 'is_splitable', nullable: true })
-  isSplitable?: boolean;
-
-  @Field(() => Int, { name: 'min_block_duration', nullable: true })
-  minBlockDuration?: number;
-
-  @Field({ name: 'preferred_time_of_day', nullable: true })
-  preferredTimeOfDay?: string;
-
-  @Field({ name: 'is_locked', nullable: true })
-  isLocked?: boolean;
 }
 
 @ObjectType()

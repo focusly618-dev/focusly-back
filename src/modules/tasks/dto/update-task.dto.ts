@@ -7,7 +7,6 @@ import {
   IsString,
   IsOptional,
 } from 'class-validator';
-import { SubtaskInput } from '../entities/task.entity';
 
 export class UpdateTaskDto {
   @IsString()
@@ -31,10 +30,6 @@ export class UpdateTaskDto {
   @IsDateString()
   @IsNotEmpty()
   deadline: string;
-
-  @IsOptional()
-  @IsArray()
-  subtasks?: SubtaskInput[];
 
   @IsOptional()
   @IsArray()

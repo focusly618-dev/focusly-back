@@ -42,7 +42,6 @@ export interface ProcessedGoogleTask {
   estimated_end_date?: string;
   status: ITask['status'];
   priority_level: number;
-  subtasks: any[];
   tags: any[];
   links: { title: string; url: string }[];
   estimate_timer?: number;

@@ -13,11 +13,9 @@ import {
 import { GoogleCalendarService } from './google-calendar.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { processGoogleEvent } from './utils/google-calendar.pipeline';
-import { ITimeBlock } from '../time-blocks/interfaces/time-block.interface';
 import { TasksService } from '../tasks/tasks.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { GoogleEvent } from './interfaces/google-calendar.interfaces';
-import { TimeBlocksService } from '../time-blocks/time-blocks.service';
 import { SchedulerService } from '../tasks/scheduler.service';
 
 /**
@@ -41,7 +39,6 @@ export class GoogleCalendarController {
     private readonly googleCalendarService: GoogleCalendarService,
     @Inject(forwardRef(() => TasksService))
     private readonly tasksService: TasksService,
-    private readonly timeBlocksService: TimeBlocksService,
     private readonly schedulerService: SchedulerService,
   ) {}
 
@@ -63,8 +60,8 @@ export class GoogleCalendarController {
 
     if (!rawData.items) return [];
 
-    // 1. Get already synced Google Event IDs from the database (now from time_blocks collection)
-    const syncedIds = await this.timeBlocksService.getSyncedGoogleIds(userId);
+    // 1. Get already synced Google Event IDs from the tasks collection
+    const syncedIds = await this.tasksService.getSyncedGoogleIds(userId);
     const normalizedSyncedIds = new Set(syncedIds.map((id) => normalizeId(id)));
 
     // 2. Filter out events that already exist in our DB
@@ -82,45 +79,32 @@ export class GoogleCalendarController {
       filteredItems.map((event) => processGoogleEvent(event)),
     );
 
-    // 4. Automatically save them to the time_blocks collection
-    const timeBlocksToSave: Partial<ITimeBlock>[] = processedEvents.map(
-      (event) => {
-        const isMeeting =
-          (event.links &&
-            event.links.some(
-              (l) =>
-                l.url.includes('meet.google.com') ||
-                l.url.includes('zoom.us') ||
-                l.url.includes('teams.microsoft.com'),
-            )) ||
-          (event.collaborators && event.collaborators.length > 1);
+    // 4. Automatically save them as Tasks (not time_blocks)
+    const tasksToSave = processedEvents.map((event) => ({
+      user_id: userId,
+      title: event.title,
+      notes_encrypted: event.notes_encrypted || '',
+      deadline: new Date(event.deadline),
+      status: 'Scheduled' as const,
+      priority_level: event.priority_level || 2,
+      estimate_timer: event.estimate_timer || 30,
+      category: 'Meeting',
+      google_event_id: event.google_event_id,
+      task_type: 'GoogleTask' as const,
+      source: 'google' as const,
+      estimated_start_date: new Date(event.estimated_start_date),
+      estimated_end_date: new Date(event.deadline),
+      tags: event.tags || [],
+      links: event.links || [],
+      collaborators: event.collaborators || [],
+    }));
 
-        return {
-          userId,
-          title: event.title,
-          startTime: new Date(event.estimated_start_date),
-          endTime: new Date(event.deadline),
-          blockType: isMeeting ? 'Meeting' : 'External_Event',
-          externalEventId: event.google_event_id,
-          source: 'Google' as const,
-          isLocked: true,
-          meetingUrl:
-            event.links && event.links.length > 0
-              ? event.links[0].url
-              : undefined,
-          attendees: event.collaborators?.map((c) => ({
-            email: c.email,
-            responseStatus: c.responseStatus,
-            name: c.name || '',
-          })),
-        };
-      },
-    );
+    if (tasksToSave.length > 0) {
+      for (const taskData of tasksToSave) {
+        await this.tasksService.create(taskData);
+      }
 
-    if (timeBlocksToSave.length > 0) {
-      await this.timeBlocksService.createMany(timeBlocksToSave);
-
-      // Trigger backend scheduler to recalculate optimal task allocations around the new calendar blocks
+      // Trigger backend scheduler to recalculate optimal task allocations
       await this.schedulerService.scheduleUserTasks(userId);
     }
 

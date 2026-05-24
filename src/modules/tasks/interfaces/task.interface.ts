@@ -23,20 +23,6 @@ export interface ITask {
     | 'Scheduled'
     | 'Archived';
   completedAt?: Date;
-  subtasks: {
-    title: string;
-    completed: boolean;
-    timer: number;
-    notesEncrypted?: string;
-    estimateTimer?: number;
-    priorityLevel?: number;
-    status?: string;
-    deadline?: Date | string;
-    category?: string;
-    color?: string;
-    realTimer?: number;
-    tags?: string[];
-  }[];
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
@@ -60,8 +46,4 @@ export interface ITask {
   notified?: boolean;
   lastMinuteNotified?: boolean;
   use_ai?: boolean;
-  isSplitable?: boolean;
-  minBlockDuration?: number;
-  preferredTimeOfDay?: 'morning' | 'afternoon' | 'evening' | 'any';
-  isLocked?: boolean;
 }

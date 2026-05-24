@@ -43,7 +43,6 @@ export interface ProcessedGoogleTask {
   estimated_start_date: string;
   status: ITask['status'];
   priority_level: number;
-  subtasks: any[];
   tags: any[];
   links: { title: string; url: string }[];
   estimate_timer?: number;
@@ -114,7 +113,6 @@ export const googleTaskPipeline = new Pipeline<
       estimated_start_date: start.toISOString(),
       status: 'Scheduled',
       priority_level: 3, // Default priority
-      subtasks: [],
       tags: [],
       links,
       estimate_timer: Math.round(

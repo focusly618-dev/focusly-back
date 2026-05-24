@@ -17,27 +17,11 @@ import { TaskStatus } from './schemas/task-status.enum';
 import {
   CreateTaskInput,
   TaskFilterInput,
-  SubtaskInput,
   TaskSortInput,
   UpdateTaskInput,
 } from './schemas/task.inputs';
 import { GqlAuthGuard } from '../auth/gql-auth.guard';
 import { ITask } from './interfaces/task.interface';
-
-// Interface for subtasks coming from frontend (snake_case)
-interface SubtaskFromFrontend {
-  title: string;
-  completed: boolean;
-  timer: number;
-  notes_encrypted?: string;
-  estimate_timer?: number;
-  priority_level?: number;
-  status?: string;
-  deadline?: string;
-  category?: string;
-  color?: string;
-  links?: Array<{ title: string; url: string }>;
-}
 
 @Resolver(() => Task)
 @UseGuards(GqlAuthGuard)
@@ -107,7 +91,6 @@ export class TasksResolver {
       estimated_end_date,
       collaborators,
       color,
-      preferredTimeOfDay,
       ...rest
     } = createTaskInput;
 
@@ -135,11 +118,6 @@ export class TasksResolver {
         ? new Date(estimated_end_date)
         : undefined,
       collaborators: collaborators?.map((p) => ({ ...p })),
-      preferredTimeOfDay: preferredTimeOfDay as
-        | 'morning'
-        | 'afternoon'
-        | 'evening'
-        | 'any',
     };
     return this.tasksService.create(taskData);
   }
@@ -211,32 +189,6 @@ export class TasksResolver {
     if (rest.category !== undefined) updateData.category = rest.category;
     if (rest.title !== undefined) updateData.title = rest.title;
     if (rest.color !== undefined) updateData.color = rest.color;
-    if (rest.isSplitable !== undefined)
-      updateData.isSplitable = rest.isSplitable;
-    if (rest.minBlockDuration !== undefined)
-      updateData.minBlockDuration = rest.minBlockDuration;
-    if (rest.preferredTimeOfDay !== undefined)
-      updateData.preferredTimeOfDay = rest.preferredTimeOfDay as
-        | 'morning'
-        | 'afternoon'
-        | 'evening'
-        | 'any';
-    if (rest.isLocked !== undefined) updateData.isLocked = rest.isLocked;
-    if (rest.subtasks !== undefined) {
-      updateData.subtasks = rest.subtasks.map((st: SubtaskFromFrontend) => ({
-        title: st.title,
-        completed: st.completed,
-        timer: st.timer,
-        notesEncrypted: st.notes_encrypted,
-        estimateTimer: st.estimate_timer,
-        priorityLevel: st.priority_level,
-        status: st.status,
-        deadline: st.deadline,
-        category: st.category,
-        color: st.color,
-        links: st.links,
-      }));
-    }
 
     return this.tasksService.update(id, updateData);
   }
@@ -253,14 +205,5 @@ export class TasksResolver {
   ): Promise<boolean> {
     await this.tasksService.deleteMany(ids);
     return true;
-  }
-
-  @Mutation(() => Task)
-  async addSubtask(
-    @Args('taskId') taskId: string,
-    @Args('subtask') subtask: SubtaskInput,
-  ): Promise<ITask> {
-    // Adds a subtask to an existing task
-    return this.tasksService.addSubtask(taskId, subtask);
   }
 }

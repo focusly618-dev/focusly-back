@@ -36,9 +36,6 @@ export class CreateTimeBlockDto {
   @IsNotEmpty()
   source: 'App' | 'Google' | 'Outlook';
 
-  @IsBoolean()
-  isLocked: boolean;
-
   @IsString()
   @IsNotEmpty()
   title: string;

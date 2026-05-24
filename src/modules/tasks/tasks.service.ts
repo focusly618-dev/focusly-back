@@ -55,7 +55,6 @@ export class TasksService {
       createdAt: now,
       updatedAt: now,
       tags: taskData.tags,
-      subtasks: taskData.subtasks?.map((s) => ({ ...s })) || [],
     } as ITask;
 
     const cleanedData = this.sanitizeData({
@@ -428,30 +427,6 @@ export class TasksService {
     return this.mapToTask(finalDoc.data()!);
   }
 
-  // Cambiamos 'Record<string, unknown>' por un genérico 'T extends object'
-  async addSubtask<T extends object>(id: string, subtask: T): Promise<ITask> {
-    const docRef = this.collection.doc(id);
-    const doc = await docRef.get();
-
-    if (!doc.exists) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
-    }
-
-    const taskData = doc.data();
-    const currentSubtasks =
-      (taskData?.subtasks as Record<string, unknown>[]) || [];
-
-    // this.sanitizeData se encargará de convertir tu SubtaskInput en un objeto plano para Firestore
-    const newSubtasks = [...currentSubtasks, this.sanitizeData(subtask)];
-
-    await docRef.update({
-      subtasks: newSubtasks,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return docRef.get().then((d) => this.mapToTask(d.data()!));
-  }
-
   async delete(id: string): Promise<void> {
     const docRef = this.collection.doc(id);
     const doc = await docRef.get();
@@ -606,8 +581,6 @@ export class TasksService {
       return undefined;
     };
 
-    const subtasksRaw = (data.subtasks as Record<string, unknown>[]) || [];
-
     return {
       ...data,
       deadline: convertDate(data.deadline),
@@ -618,18 +591,6 @@ export class TasksService {
       duration: convertDate(data.duration),
       estimated_start_date: convertDate(data.estimated_start_date),
       estimated_end_date: convertDate(data.estimated_end_date),
-      subtasks: subtasksRaw.map((s) => ({
-        title: (s.title as string) || 'Untitled',
-        completed: (s.completed as boolean) || false,
-        timer: (s.timer as number) || 0,
-        notesEncrypted: s.notesEncrypted as string | undefined,
-        estimateTimer: s.estimateTimer as number | undefined,
-        priorityLevel: Number(s.priorityLevel ?? s.priority_level ?? 0),
-        status: s.status as string | undefined,
-        deadline: convertDate(s.deadline),
-        category: s.category as string | undefined,
-        color: s.color as string | undefined,
-      })),
       priorityLevel: Number(data.priorityLevel ?? data.priority_level ?? 0),
       color: (data.color as string) || undefined,
       collaborators: (data.collaborators as any[]) || [],
