@@ -1,0 +1,143 @@
+type Collaborator {
+  name: String
+  email: String!
+  avatar: String
+  responseStatus: String
+}
+
+type TaskFilters {
+  status: TaskStatus
+  priorityLevel: Int
+  category: String
+}
+
+enum TaskStatus {
+  Todo
+  Planning
+  Pending
+  OnHold
+  Review
+  Done
+  Backlog
+  Scheduled
+  Archived
+}
+
+type TaskLink {
+  title: String!
+  url: String!
+}
+
+type Task {
+  id: ID!
+  user_id: String!
+  title: String!
+  notes_encrypted: String!
+  estimate_timer: Int
+  real_timer: Int
+  priority_level: Int!
+  category: String
+  color: String
+  deadline: DateTime!
+  status: TaskStatus!
+  completed_at: DateTime
+  duration: DateTime
+  created_at: DateTime!
+  updated_at: DateTime!
+  deleted_at: DateTime
+  tags: [Tag!]!
+  filters: TaskFilters
+  workspace: Workspace
+  links: [TaskLink!]!
+  task_type: String
+  google_event_id: String
+  estimated_start_date: DateTime
+  estimated_end_date: DateTime
+  collaborators: [Collaborator!]
+}
+
+input TaskFilterInput {
+  status: TaskStatus
+  priorityLevel: Float
+  category: String
+  startDate: String
+  endDate: String
+}
+
+input TaskSortInput {
+  sort: String
+  order: String
+}
+
+input CreateTaskInput {
+  user_id: String!
+  title: String!
+  notes_encrypted: String!
+  estimate_timer: Int
+  real_timer: Int
+  duration: String
+  priority_level: Int!
+  deadline: String!
+  category: String!
+  color: String
+  status: TaskStatus
+  tags: [String!]!
+  links: [LinkInput!]
+  task_type: String
+  google_event_id: String
+  estimated_start_date: String
+  estimated_end_date: String
+  source: String
+  sync_status: String
+  collaborators: [CollaboratorInput!]
+}
+
+input LinkInput {
+  title: String!
+  url: String!
+}
+
+input CollaboratorInput {
+  name: String
+  email: String!
+  avatar: String
+  responseStatus: String
+}
+
+input UpdateTaskInput {
+  user_id: String
+  title: String
+  notes_encrypted: String
+  estimate_timer: Int
+  real_timer: Int
+  duration: String
+  priority_level: Int
+  deadline: String
+  category: String
+  color: String
+  status: TaskStatus
+  tags: [String!]
+  links: [LinkInput!]
+  task_type: String
+  google_event_id: String
+  estimated_start_date: String
+  estimated_end_date: String
+  source: String
+  sync_status: String
+  collaborators: [CollaboratorInput!]
+  id: ID!
+}
+
+type Query {
+  getTasks: [Task!]!
+  getTasksByUser(userId: String!, filters: TaskFilterInput, sort: TaskSortInput): [Task!]!
+  getTask(id: String!): Task!
+  getTaskByFilters(filters: TaskFilterInput!): [Task!]!
+}
+
+type Mutation {
+  createTask(createTaskInput: CreateTaskInput!): Task!
+  deleteWorkspaceTasks(workspaceId: String!): Boolean!
+  updateTask(updateTaskInput: UpdateTaskInput!): Task!
+  deleteTask(id: String!): Boolean!
+}

@@ -1,0 +1,51 @@
+type Workspace {
+  id: ID!
+  userId: String!
+  taskId: String
+  task: Task
+  title: String!
+  emoji: String
+  background_color: String
+  card_show_background: Boolean
+  folderId: String
+  content: String!
+  createdAt: DateTime!
+  saveStatus: Boolean
+  updatedAt: DateTime!
+  folder: Folder
+}
+
+input CreateWorkspaceInput {
+  taskId: String
+  folderId: String
+  title: String!
+  emoji: String
+  background_color: String
+  card_show_background: Boolean
+  content: String!
+  saveStatus: Boolean!
+}
+
+input UpdateWorkspaceInput {
+  taskId: String
+  folderId: String
+  title: String
+  emoji: String
+  background_color: String
+  card_show_background: Boolean
+  content: String
+  saveStatus: Boolean
+  id: ID!
+}
+
+type Query {
+  workspaces(search: String, folderId: String): [Workspace!]!
+  workspace(id: ID!): Workspace!
+  totalWorkspaces: Int!
+}
+
+type Mutation {
+  createWorkspace(createWorkspaceInput: CreateWorkspaceInput!): Workspace!
+  updateWorkspace(updateWorkspaceInput: UpdateWorkspaceInput!): Workspace!
+  removeWorkspace(id: ID!): Boolean!
+}

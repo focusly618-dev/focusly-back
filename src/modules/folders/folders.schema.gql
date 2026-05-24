@@ -1,0 +1,33 @@
+type Folder {
+  id: ID!
+  name: String!
+  userId: String!
+  color: String
+  workspaces: [Workspace]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  workspaceCount: Int!
+}
+
+input CreateFolderInput {
+  name: String!
+  color: String
+}
+
+input UpdateFolderInput {
+  name: String
+  color: String
+  id: ID!
+}
+
+type Query {
+  folders: [Folder!]!
+  folder(id: ID!): Folder!
+  totalFolders: Int!
+}
+
+type Mutation {
+  createFolder(createFolderInput: CreateFolderInput!): Folder!
+  updateFolder(updateFolderInput: UpdateFolderInput!): Folder!
+  removeFolder(id: ID!): Boolean!
+}

@@ -1,0 +1,7 @@
+type Tag {
+  name: String!
+}
+
+type Query {
+  getTagsByUser(userId: String!): [Tag!]!
+}
