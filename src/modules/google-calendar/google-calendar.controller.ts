@@ -13,6 +13,7 @@ import {
 import { GoogleCalendarService } from './google-calendar.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { processGoogleEvent } from './utils/google-calendar.pipeline';
+import { ITimeBlock } from '../time-blocks/interfaces/time-block.interface';
 import { TasksService } from '../tasks/tasks.service';
 import { Inject, forwardRef } from '@nestjs/common';
 import { GoogleEvent } from './interfaces/google-calendar.interfaces';
@@ -82,37 +83,39 @@ export class GoogleCalendarController {
     );
 
     // 4. Automatically save them to the time_blocks collection
-    const timeBlocksToSave = processedEvents.map((event) => {
-      const isMeeting =
-        (event.links &&
-          event.links.some(
-            (l) =>
-              l.url.includes('meet.google.com') ||
-              l.url.includes('zoom.us') ||
-              l.url.includes('teams.microsoft.com'),
-          )) ||
-        (event.collaborators && event.collaborators.length > 1);
+    const timeBlocksToSave: Partial<ITimeBlock>[] = processedEvents.map(
+      (event) => {
+        const isMeeting =
+          (event.links &&
+            event.links.some(
+              (l) =>
+                l.url.includes('meet.google.com') ||
+                l.url.includes('zoom.us') ||
+                l.url.includes('teams.microsoft.com'),
+            )) ||
+          (event.collaborators && event.collaborators.length > 1);
 
-      return {
-        userId,
-        title: event.title,
-        startTime: new Date(event.estimated_start_date),
-        endTime: new Date(event.deadline),
-        blockType: isMeeting ? 'Meeting' : 'External_Event',
-        externalEventId: event.google_event_id,
-        source: 'Google' as const,
-        isLocked: true,
-        meetingUrl:
-          event.links && event.links.length > 0
-            ? event.links[0].url
-            : undefined,
-        attendees: event.collaborators?.map((c) => ({
-          email: c.email,
-          responseStatus: c.responseStatus,
-          name: c.name || '',
-        })),
-      };
-    });
+        return {
+          userId,
+          title: event.title,
+          startTime: new Date(event.estimated_start_date),
+          endTime: new Date(event.deadline),
+          blockType: isMeeting ? 'Meeting' : 'External_Event',
+          externalEventId: event.google_event_id,
+          source: 'Google' as const,
+          isLocked: true,
+          meetingUrl:
+            event.links && event.links.length > 0
+              ? event.links[0].url
+              : undefined,
+          attendees: event.collaborators?.map((c) => ({
+            email: c.email,
+            responseStatus: c.responseStatus,
+            name: c.name || '',
+          })),
+        };
+      },
+    );
 
     if (timeBlocksToSave.length > 0) {
       await this.timeBlocksService.createMany(timeBlocksToSave);
