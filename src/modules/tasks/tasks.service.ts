@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { ITask } from './interfaces/task.interface';
 import * as admin from 'firebase-admin';
@@ -6,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { TaskFilterInput, TaskSortInput } from './schemas/task.inputs';
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 import { TaskStatus } from './schemas/task-status.enum';
+import { SchedulerService } from './scheduler.service';
 
 @Injectable()
 export class TasksService {
@@ -14,6 +20,8 @@ export class TasksService {
   constructor(
     private firebaseService: FirebaseService,
     private googleCalendarService: GoogleCalendarService,
+    @Inject(forwardRef(() => SchedulerService))
+    private schedulerService: SchedulerService,
   ) {
     this.collection = this.firebaseService.db.collection('tasks');
   }
@@ -62,7 +70,12 @@ export class TasksService {
 
     await docRef.set(cleanedData);
 
-    return task;
+    if (task.userId) {
+      await this.schedulerService.scheduleUserTasks(task.userId);
+    }
+
+    const scheduledDoc = await docRef.get();
+    return this.mapToTask(scheduledDoc.data()!);
   }
 
   /**
@@ -407,7 +420,12 @@ export class TasksService {
     }
 
     const updatedDoc = await docRef.get();
-    return this.mapToTask(updatedDoc.data()!);
+    const task = this.mapToTask(updatedDoc.data()!);
+    if (task.userId) {
+      await this.schedulerService.scheduleUserTasks(task.userId);
+    }
+    const finalDoc = await docRef.get();
+    return this.mapToTask(finalDoc.data()!);
   }
 
   // Cambiamos 'Record<string, unknown>' por un genérico 'T extends object'
@@ -491,9 +509,18 @@ export class TasksService {
       deletedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    if (taskData.userId) {
+      await this.schedulerService.scheduleUserTasks(taskData.userId);
+    }
+
     console.log(
       `[DELETE] ${taskType} with ID: ${id} soft-deleted successfully`,
     );
+  }
+
+  async deleteMany(ids: string[]): Promise<void> {
+    await Promise.all(ids.map((id) => this.delete(id)));
   }
 
   async deleteWorkspaceTasks(workspaceId: string): Promise<void> {

@@ -35,10 +35,19 @@ export class NotificationsCronService {
       );
 
       for (const task of earlyTasks) {
-        if (!task.userId) continue;
-        const user = await this.usersService.findOne(task.userId);
-        if (user && user.fcmToken) {
-          await this.sendTaskNotification(user, task, 'Upcoming Task! 🚀');
+        try {
+          if (task.userId) {
+            const user = await this.usersService.findOne(task.userId);
+            if (user && user.fcmToken) {
+              await this.sendTaskNotification(user, task, 'Upcoming Task! 🚀');
+            }
+          }
+        } catch (err) {
+          this.logger.error(
+            `Error processing early notification for task ${task.id}:`,
+            err,
+          );
+        } finally {
           await this.tasksService.markAsNotified(task.id);
         }
       }
@@ -50,10 +59,23 @@ export class NotificationsCronService {
       );
 
       for (const task of lastMinuteTasks) {
-        if (!task.userId) continue;
-        const user = await this.usersService.findOne(task.userId);
-        if (user && user.fcmToken) {
-          await this.sendTaskNotification(user, task, 'Starts in 1 minute! ⚠️');
+        try {
+          if (task.userId) {
+            const user = await this.usersService.findOne(task.userId);
+            if (user && user.fcmToken) {
+              await this.sendTaskNotification(
+                user,
+                task,
+                'Starts in 1 minute! ⚠️',
+              );
+            }
+          }
+        } catch (err) {
+          this.logger.error(
+            `Error processing last minute notification for task ${task.id}:`,
+            err,
+          );
+        } finally {
           await this.tasksService.markAsLastMinuteNotified(task.id);
         }
       }

@@ -38,9 +38,7 @@ export class FoldersService {
       }
     });
 
-    await newFolderRef.set(
-      folderData as admin.firestore.WithFieldValue<admin.firestore.DocumentData>,
-    );
+    await newFolderRef.set(folderData);
 
     return {
       ...folderData,

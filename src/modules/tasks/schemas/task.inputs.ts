@@ -208,6 +208,31 @@ export class CreateTaskInput {
   @ValidateNested({ each: true })
   @Type(() => CollaboratorInput)
   collaborators?: CollaboratorInput[];
+
+  @Field({ name: 'use_ai', nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  use_ai?: boolean;
+
+  @Field({ name: 'is_splitable', nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isSplitable?: boolean;
+
+  @Field(() => Int, { name: 'min_block_duration', nullable: true })
+  @IsOptional()
+  @IsInt()
+  minBlockDuration?: number;
+
+  @Field({ name: 'preferred_time_of_day', nullable: true })
+  @IsOptional()
+  @IsString()
+  preferredTimeOfDay?: string;
+
+  @Field({ name: 'is_locked', nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isLocked?: boolean;
 }
 
 @InputType()

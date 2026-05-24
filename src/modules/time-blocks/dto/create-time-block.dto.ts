@@ -24,9 +24,9 @@ export class CreateTimeBlockDto {
   @IsNotEmpty()
   endTime: string;
 
-  @IsEnum(['Focus_Block', 'Break', 'External_Event'])
+  @IsEnum(['Focus_Block', 'Break', 'External_Event', 'Meeting'])
   @IsNotEmpty()
-  blockType: 'Focus_Block' | 'Break' | 'External_Event';
+  blockType: 'Focus_Block' | 'Break' | 'External_Event' | 'Meeting';
 
   @IsString()
   @IsOptional()
@@ -38,4 +38,15 @@ export class CreateTimeBlockDto {
 
   @IsBoolean()
   isLocked: boolean;
+
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  meetingUrl?: string;
+
+  @IsOptional()
+  attendees?: Array<{ email: string; responseStatus?: string; name?: string }>;
 }
