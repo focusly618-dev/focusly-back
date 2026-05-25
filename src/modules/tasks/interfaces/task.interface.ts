@@ -46,4 +46,5 @@ export interface ITask {
   notified?: boolean;
   lastMinuteNotified?: boolean;
   use_ai?: boolean;
+  _changed?: boolean;
 }

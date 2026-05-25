@@ -214,6 +214,8 @@ export class GoogleCalendarService {
         `Fetched ${itemsToProcess.length} events/changes to process for user ${userId}`,
       );
 
+      let hasChanges = false;
+
       for (const item of itemsToProcess) {
         const eventId = item.id || '';
 
@@ -230,7 +232,8 @@ export class GoogleCalendarService {
 
           if (!existingTasks.empty) {
             for (const doc of existingTasks.docs) {
-              await this.tasksService.delete(doc.id);
+              await this.tasksService.delete(doc.id, { skipScheduling: true });
+              hasChanges = true;
             }
           }
         } else {
@@ -260,7 +263,12 @@ export class GoogleCalendarService {
             collaborators: processed.collaborators || [],
           };
 
-          await this.tasksService.create(taskData);
+          const task = await this.tasksService.create(taskData, {
+            skipScheduling: true,
+          });
+          if (task._changed) {
+            hasChanges = true;
+          }
         }
       }
 
@@ -271,7 +279,16 @@ export class GoogleCalendarService {
         );
       }
 
-      await this.schedulerService.scheduleUserTasks(userId);
+      if (hasChanges) {
+        this.logger.log(
+          `Sync Calendar detected changes. Running scheduler for user: ${userId}`,
+        );
+        await this.schedulerService.scheduleUserTasks(userId);
+      } else {
+        this.logger.log(
+          `Sync Calendar detected no actual changes for user: ${userId}. Skipping scheduler.`,
+        );
+      }
 
       // Attempt to register/update push watch channel
       await this.watchCalendar(userId);
