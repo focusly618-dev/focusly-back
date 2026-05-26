@@ -110,7 +110,6 @@ export class TimeBlocksService {
     const snapshot = await this.collection
       .where('userId', '==', userId)
       .where('blockType', '==', 'Focus_Block')
-      .where('isLocked', '==', false)
       .get();
 
     if (snapshot.empty) return;

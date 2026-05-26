@@ -34,68 +34,6 @@ export class CollaboratorInput {
 }
 
 @InputType()
-export class SubtaskInput {
-  @Field()
-  @IsString()
-  title: string;
-
-  @Field()
-  @IsBoolean()
-  completed: boolean;
-
-  @Field(() => Int)
-  @IsInt()
-  timer: number;
-
-  @Field({ nullable: true })
-  @IsOptional()
-  @IsString()
-  notes_encrypted?: string;
-
-  @Field(() => Int, { nullable: true })
-  @IsOptional()
-  @IsInt()
-  estimate_timer?: number;
-
-  @Field(() => Int, { nullable: true })
-  @IsOptional()
-  @IsInt()
-  priority_level?: number;
-
-  @Field(() => TaskStatus, { nullable: true })
-  @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
-
-  @Field({ nullable: true })
-  @IsOptional()
-  @IsString()
-  deadline?: string;
-
-  @Field({ nullable: true })
-  @IsOptional()
-  @IsString()
-  category?: string;
-
-  @Field({ nullable: true })
-  @IsOptional()
-  @IsString()
-  color?: string;
-
-  @Field(() => [LinkInput], { nullable: true })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => LinkInput)
-  links?: LinkInput[];
-
-  @Field({ name: 'use_ai', nullable: true })
-  @IsOptional()
-  @IsBoolean()
-  use_ai?: boolean;
-}
-
-@InputType()
 export class LinkInput {
   @Field()
   @IsString()
@@ -157,12 +95,6 @@ export class CreateTaskInput {
   @IsOptional()
   @IsEnum(TaskStatus)
   status?: TaskStatus;
-
-  @Field(() => [SubtaskInput])
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SubtaskInput)
-  subtasks: SubtaskInput[];
 
   @Field(() => [String])
   @IsArray()

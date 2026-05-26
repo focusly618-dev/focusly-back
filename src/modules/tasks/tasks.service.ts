@@ -13,6 +13,37 @@ import { GoogleCalendarService } from '../google-calendar/google-calendar.servic
 import { TaskStatus } from './schemas/task-status.enum';
 import { SchedulerService } from './scheduler.service';
 
+const areDatesEqual = (val1: any, val2: any): boolean => {
+  const getMs = (val: any): number | null => {
+    if (!val) return null;
+    if (val instanceof Date) {
+      return val.getTime();
+    }
+    if (val instanceof admin.firestore.Timestamp) {
+      return val.toDate().getTime();
+    }
+    if (typeof val === 'string') {
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d.getTime();
+    }
+    if (
+      typeof val === 'object' &&
+      'toDate' in val &&
+      typeof (val as { toDate: unknown }).toDate === 'function'
+    ) {
+      const date = (val as { toDate: () => unknown }).toDate();
+      if (date instanceof Date) {
+        return date.getTime();
+      }
+    }
+    return null;
+  };
+
+  const ms1 = getMs(val1);
+  const ms2 = getMs(val2);
+  return ms1 === ms2;
+};
+
 @Injectable()
 export class TasksService {
   private collection: admin.firestore.CollectionReference;
@@ -26,7 +57,10 @@ export class TasksService {
     this.collection = this.firebaseService.db.collection('tasks');
   }
 
-  async create(taskData: Partial<ITask>): Promise<ITask> {
+  async create(
+    taskData: Partial<ITask>,
+    options?: { skipScheduling?: boolean },
+  ): Promise<ITask> {
     // If google_event_id is present, check for existing task to avoid duplicates (Upsert)
     if (taskData.google_event_id && taskData.userId) {
       const existing = await this.collection
@@ -41,7 +75,7 @@ export class TasksService {
         console.log(
           `[UPSERT] Task with google_event_id ${taskData.google_event_id} already exists (ID: ${doc.id}). Updating instead of creating.`,
         );
-        return this.update(doc.id, taskData);
+        return this.update(doc.id, taskData, options);
       }
     }
 
@@ -55,7 +89,6 @@ export class TasksService {
       createdAt: now,
       updatedAt: now,
       tags: taskData.tags,
-      subtasks: taskData.subtasks?.map((s) => ({ ...s })) || [],
     } as ITask;
 
     const cleanedData = this.sanitizeData({
@@ -70,12 +103,14 @@ export class TasksService {
 
     await docRef.set(cleanedData);
 
-    if (task.userId) {
+    if (task.userId && !options?.skipScheduling) {
       await this.schedulerService.scheduleUserTasks(task.userId);
     }
 
     const scheduledDoc = await docRef.get();
-    return this.mapToTask(scheduledDoc.data()!);
+    const resultTask = this.mapToTask(scheduledDoc.data()!);
+    resultTask._changed = true;
+    return resultTask;
   }
 
   /**
@@ -235,8 +270,10 @@ export class TasksService {
               : t.deadline;
           if (!dateToUse) return false;
           const time = new Date(dateToUse).getTime();
-          if (filters.startDate && time < new Date(filters.startDate).getTime()) return false;
-          if (filters.endDate && time > new Date(filters.endDate).getTime()) return false;
+          if (filters.startDate && time < new Date(filters.startDate).getTime())
+            return false;
+          if (filters.endDate && time > new Date(filters.endDate).getTime())
+            return false;
           return true;
         });
       }
@@ -333,8 +370,10 @@ export class TasksService {
               : t.deadline;
           if (!dateToUse) return false;
           const time = new Date(dateToUse).getTime();
-          if (filters.startDate && time < new Date(filters.startDate).getTime()) return false;
-          if (filters.endDate && time > new Date(filters.endDate).getTime()) return false;
+          if (filters.startDate && time < new Date(filters.startDate).getTime())
+            return false;
+          if (filters.endDate && time > new Date(filters.endDate).getTime())
+            return false;
           return true;
         });
       }
@@ -376,7 +415,8 @@ export class TasksService {
 
     const totalCount = tasks.length;
     const startIdx = offset || 0;
-    const endIdx = limit !== undefined && limit !== null ? startIdx + limit : totalCount;
+    const endIdx =
+      limit !== undefined && limit !== null ? startIdx + limit : totalCount;
     const paginatedTasks = tasks.slice(startIdx, endIdx);
 
     return {
@@ -393,7 +433,11 @@ export class TasksService {
     return this.mapToTask(doc.data()!);
   }
 
-  async update(id: string, updateData: Partial<ITask>): Promise<ITask> {
+  async update(
+    id: string,
+    updateData: Partial<ITask>,
+    options?: { skipScheduling?: boolean },
+  ): Promise<ITask> {
     const docRef = this.collection.doc(id);
     const sanitizedUpdate = this.sanitizeData(updateData);
 
@@ -403,6 +447,7 @@ export class TasksService {
     }
 
     const doc = await docRef.get();
+    let hasChanges = false;
 
     if (!doc.exists) {
       await docRef.set({
@@ -412,47 +457,82 @@ export class TasksService {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         deletedAt: null,
       });
+      hasChanges = true;
     } else {
-      await docRef.update({
-        ...sanitizedUpdate,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      const currentData = doc.data() as ITask;
+
+      for (const [key, value] of Object.entries(sanitizedUpdate)) {
+        if (key === 'updatedAt' || key === 'createdAt') {
+          continue;
+        }
+
+        const currentVal = currentData[key as keyof ITask];
+
+        if (!value && !currentVal) {
+          continue;
+        }
+
+        const isVal1Date =
+          value instanceof Date ||
+          (value &&
+            typeof value === 'object' &&
+            'toDate' in value &&
+            typeof (value as { toDate: unknown }).toDate === 'function');
+        const isVal2Date =
+          currentVal instanceof Date ||
+          (currentVal &&
+            typeof currentVal === 'object' &&
+            'toDate' in currentVal &&
+            typeof (currentVal as { toDate: unknown }).toDate === 'function');
+        if (isVal1Date || isVal2Date) {
+          if (!areDatesEqual(value, currentVal)) {
+            hasChanges = true;
+            break;
+          }
+          continue;
+        }
+
+        if (typeof value === 'object' || typeof currentVal === 'object') {
+          if (JSON.stringify(value) !== JSON.stringify(currentVal)) {
+            hasChanges = true;
+            break;
+          }
+          continue;
+        }
+
+        if (value !== currentVal) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      if (hasChanges) {
+        await docRef.update({
+          ...sanitizedUpdate,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } else {
+        console.log(
+          `[UPDATE] No actual changes detected for task ${id}. Skipping firestore update.`,
+        );
+      }
     }
 
     const updatedDoc = await docRef.get();
     const task = this.mapToTask(updatedDoc.data()!);
-    if (task.userId) {
+    if (task.userId && hasChanges && !options?.skipScheduling) {
       await this.schedulerService.scheduleUserTasks(task.userId);
     }
     const finalDoc = await docRef.get();
-    return this.mapToTask(finalDoc.data()!);
+    const resultTask = this.mapToTask(finalDoc.data()!);
+    resultTask._changed = hasChanges;
+    return resultTask;
   }
 
-  // Cambiamos 'Record<string, unknown>' por un genérico 'T extends object'
-  async addSubtask<T extends object>(id: string, subtask: T): Promise<ITask> {
-    const docRef = this.collection.doc(id);
-    const doc = await docRef.get();
-
-    if (!doc.exists) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
-    }
-
-    const taskData = doc.data();
-    const currentSubtasks =
-      (taskData?.subtasks as Record<string, unknown>[]) || [];
-
-    // this.sanitizeData se encargará de convertir tu SubtaskInput en un objeto plano para Firestore
-    const newSubtasks = [...currentSubtasks, this.sanitizeData(subtask)];
-
-    await docRef.update({
-      subtasks: newSubtasks,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    return docRef.get().then((d) => this.mapToTask(d.data()!));
-  }
-
-  async delete(id: string): Promise<void> {
+  async delete(
+    id: string,
+    options?: { skipScheduling?: boolean },
+  ): Promise<void> {
     const docRef = this.collection.doc(id);
     const doc = await docRef.get();
 
@@ -510,7 +590,7 @@ export class TasksService {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    if (taskData.userId) {
+    if (taskData.userId && !options?.skipScheduling) {
       await this.schedulerService.scheduleUserTasks(taskData.userId);
     }
 
@@ -520,7 +600,26 @@ export class TasksService {
   }
 
   async deleteMany(ids: string[]): Promise<void> {
-    await Promise.all(ids.map((id) => this.delete(id)));
+    if (ids.length === 0) return;
+
+    const userIds = new Set<string>();
+
+    await Promise.all(
+      ids.map(async (id) => {
+        const doc = await this.collection.doc(id).get();
+        if (doc.exists) {
+          const taskData = doc.data() as ITask;
+          if (taskData.userId) {
+            userIds.add(taskData.userId);
+          }
+          await this.delete(id, { skipScheduling: true });
+        }
+      }),
+    );
+
+    for (const userId of userIds) {
+      await this.schedulerService.scheduleUserTasks(userId);
+    }
   }
 
   async deleteWorkspaceTasks(workspaceId: string): Promise<void> {
@@ -558,13 +657,23 @@ export class TasksService {
     }
 
     const batch = this.firebaseService.db.batch();
+    const userIds = new Set<string>();
+
     snapshot.docs.forEach((doc) => {
+      const taskData = doc.data() as ITask;
+      if (taskData.userId) {
+        userIds.add(taskData.userId);
+      }
       batch.update(doc.ref, {
         deletedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });
     await batch.commit();
+
+    for (const userId of userIds) {
+      await this.schedulerService.scheduleUserTasks(userId);
+    }
   }
 
   private sanitizeData<T>(data: T): T {
@@ -606,8 +715,6 @@ export class TasksService {
       return undefined;
     };
 
-    const subtasksRaw = (data.subtasks as Record<string, unknown>[]) || [];
-
     return {
       ...data,
       deadline: convertDate(data.deadline),
@@ -618,18 +725,6 @@ export class TasksService {
       duration: convertDate(data.duration),
       estimated_start_date: convertDate(data.estimated_start_date),
       estimated_end_date: convertDate(data.estimated_end_date),
-      subtasks: subtasksRaw.map((s) => ({
-        title: (s.title as string) || 'Untitled',
-        completed: (s.completed as boolean) || false,
-        timer: (s.timer as number) || 0,
-        notesEncrypted: s.notesEncrypted as string | undefined,
-        estimateTimer: s.estimateTimer as number | undefined,
-        priorityLevel: Number(s.priorityLevel ?? s.priority_level ?? 0),
-        status: s.status as string | undefined,
-        deadline: convertDate(s.deadline),
-        category: s.category as string | undefined,
-        color: s.color as string | undefined,
-      })),
       priorityLevel: Number(data.priorityLevel ?? data.priority_level ?? 0),
       color: (data.color as string) || undefined,
       collaborators: (data.collaborators as any[]) || [],

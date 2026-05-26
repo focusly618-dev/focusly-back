@@ -1,0 +1,33 @@
+type StatCardValue {
+  value: String!
+  change: String!
+  trend: String!
+}
+
+type ProductivityTrend {
+  label: String!
+  actual: Float!
+  planned: Float!
+}
+
+type TimeDistribution {
+  name: String!
+  value: Float!
+  color: String!
+}
+
+type InsightsResponse {
+  totalFocusHours: StatCardValue!
+  taskCompletion: StatCardValue!
+  energyScore: StatCardValue!
+  goldenWindow: StatCardValue!
+  breakHours: StatCardValue!
+  productivityTrends: [ProductivityTrend!]!
+  timeDistribution: [TimeDistribution!]!
+  heatmap: [Int!]!
+  heatmapLabels: [String!]
+}
+
+type Query {
+  getInsights(userId: String!, filter: String! = "Weekly"): InsightsResponse!
+}

@@ -7,6 +7,7 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { GoogleCalendarModule } from '../google-calendar/google-calendar.module';
 import { TimeBlocksModule } from '../time-blocks/time-blocks.module';
 import { SchedulingModule } from '../scheduling/scheduling.module';
+import { RealTimeModule } from '../real-time/real-time.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { SchedulingModule } from '../scheduling/scheduling.module';
     GoogleCalendarModule,
     TimeBlocksModule,
     SchedulingModule,
+    RealTimeModule,
   ],
   providers: [TasksService, TasksResolver, SchedulerService],
   exports: [TasksService, SchedulerService],

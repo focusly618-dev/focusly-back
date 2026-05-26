@@ -48,7 +48,6 @@ Este documento detalla las APIs principales registradas en el proyecto Focusly, 
 - **Información Recibida (Resultado)**:
   - Un array de objetos `Task` con campos como:
     - `id`, `title`, `notes_encrypted`, `status`, `priority_level`, `category`, `deadline`.
-    - `subtasks`: Lista de subtareas relacionadas.
     - `tags`: Etiquetas asociadas.
     - `workspace`: Información del workspace al que pertenece.
 
@@ -78,16 +77,6 @@ Este documento detalla las APIs principales registradas en el proyecto Focusly, 
   - `id`: `String!` (ID de la tarea a eliminar).
 - **Información Recibida**:
   - `Boolean`: `true` si la operación fue exitosa.
-
-### `addSubtask`
-- **Nombre**: Add Subtask
-- **Tipo**: `Mutation`
-- **Descripción**: Añade una subtarea a una tarea padre existente.
-- **Información Enviada (Arguments)**:
-  - `taskId`: `String!` (ID de la tarea padre).
-  - `subtask`: `SubtaskInput!` (Detalles de la subtarea).
-- **Información Recibida**:
-  - El objeto `Task` (padre) con la nueva lista de subtareas.
 
 ---
 

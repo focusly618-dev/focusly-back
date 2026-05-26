@@ -1,0 +1,29 @@
+type UserSettings {
+  focusDurationPref: Float
+  breakDurationPref: Float
+  notificationsEnabled: Boolean
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String
+  picture: String
+  role: String
+  authProvider: String
+  googleRefreshToken: String
+  subscriptionStatus: String!
+  settings: UserSettings
+  bio: String
+}
+
+type AuthResponse {
+  access_token: String!
+  user: User!
+  google_access_token: String
+}
+
+type Mutation {
+  googleLogin(code: String!): AuthResponse!
+  firebaseLogin(token: String!, fullName: String!): AuthResponse!
+}

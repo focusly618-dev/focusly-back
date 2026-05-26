@@ -49,7 +49,6 @@ export const BasicMappingStage = (event: GoogleEvent): ProcessedGoogleTask => {
     estimated_end_date: deadline.toISOString(),
     status: 'Scheduled',
     priority_level: mapGoogleColorToPriority(event.colorId),
-    subtasks: [],
     tags: [],
     links: [],
     estimate_timer: Math.round((deadline.getTime() - start.getTime()) / 60000),

@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsDateString,
   IsEnum,
-  IsBoolean,
 } from 'class-validator';
 
 export class CreateTimeBlockDto {
@@ -35,9 +34,6 @@ export class CreateTimeBlockDto {
   @IsEnum(['App', 'Google', 'Outlook'])
   @IsNotEmpty()
   source: 'App' | 'Google' | 'Outlook';
-
-  @IsBoolean()
-  isLocked: boolean;
 
   @IsString()
   @IsNotEmpty()

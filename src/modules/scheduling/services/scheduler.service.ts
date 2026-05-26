@@ -136,17 +136,15 @@ export class SchedulerService {
       });
     });
 
-    // Add meetings (only locked ones)
-    meetings
-      .filter((m) => m.isLocked)
-      .forEach((meeting) => {
-        constraints.push({
-          start: meeting.start,
-          end: meeting.end,
-          type: 'meeting',
-          id: meeting.id,
-        });
+    // Add meetings
+    meetings.forEach((meeting) => {
+      constraints.push({
+        start: meeting.start,
+        end: meeting.end,
+        type: 'meeting',
+        id: meeting.id,
       });
+    });
 
     // Sort by start time
     constraints.sort((a, b) => a.start.getTime() - b.start.getTime());
@@ -255,39 +253,24 @@ export class SchedulerService {
     for (const slot of availableSlots) {
       if (remainingDuration <= 0) break;
 
-      // Check if task can be split
-      if (task.isSplitable) {
-        // Schedule as much as fits in this slot
-        const slotDuration = this.getSlotDuration(slot);
-        const maxBlockDuration = Math.min(
-          slotDuration,
-          task.maxBlockDuration || constraints.maxFocusBlockDuration,
-        );
-        const blockDuration = Math.min(maxBlockDuration, remainingDuration);
+      // Schedule as much as fits in this slot
+      const slotDuration = this.getSlotDuration(slot);
+      const maxBlockDuration = Math.min(
+        slotDuration,
+        constraints.maxFocusBlockDuration,
+      );
+      const blockDuration = Math.min(maxBlockDuration, remainingDuration);
 
-        if (blockDuration >= task.minBlockDuration) {
-          const workBlock = this.createWorkBlock(
-            task,
-            slot.start,
-            new Date(slot.start.getTime() + blockDuration * 60000),
-            constraints,
-          );
-          workBlocks.push(workBlock);
-          remainingDuration -= blockDuration;
-        }
-      } else {
-        // Task must fit entirely in one slot
-        const slotDuration = this.getSlotDuration(slot);
-        if (slotDuration >= task.estimatedDuration) {
-          const workBlock = this.createWorkBlock(
-            task,
-            slot.start,
-            new Date(slot.start.getTime() + task.estimatedDuration * 60000),
-            constraints,
-          );
-          workBlocks.push(workBlock);
-          remainingDuration = 0;
-        }
+      if (blockDuration >= 5) {
+        // Minimum 5 minutes
+        const workBlock = this.createWorkBlock(
+          task,
+          slot.start,
+          new Date(slot.start.getTime() + blockDuration * 60000),
+          constraints,
+        );
+        workBlocks.push(workBlock);
+        remainingDuration -= blockDuration;
       }
     }
 
@@ -510,7 +493,6 @@ export class SchedulerService {
       end,
       duration: (end.getTime() - start.getTime()) / 60000,
       blockType: 'focus',
-      isLocked: false,
       isGenerated: true,
       schedulingScore: this.calculateSchedulingScore(
         task,
@@ -534,24 +516,7 @@ export class SchedulerService {
     constraints: SchedulingConstraints,
   ): number {
     let score = 0;
-
-    // Check if within preferred time of day
     const hour = start.getHours();
-    if (task.preferredTimeOfDay === 'morning' && hour >= 6 && hour < 12) {
-      score += 0.3;
-    } else if (
-      task.preferredTimeOfDay === 'afternoon' &&
-      hour >= 12 &&
-      hour < 18
-    ) {
-      score += 0.3;
-    } else if (
-      task.preferredTimeOfDay === 'evening' &&
-      hour >= 18 &&
-      hour < 22
-    ) {
-      score += 0.3;
-    }
 
     // Check if within golden window
     if (constraints.goldenWindow) {
@@ -571,19 +536,6 @@ export class SchedulerService {
     }
 
     // Check if on preferred day
-    const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const dayName = dayNames[start.getDay()] as
-      | 'sun'
-      | 'mon'
-      | 'tue'
-      | 'wed'
-      | 'thu'
-      | 'fri'
-      | 'sat';
-    if (task.preferredDays && task.preferredDays.includes(dayName)) {
-      score += 0.3;
-    }
-
     return Math.min(score, 1);
   }
 

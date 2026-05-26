@@ -181,12 +181,7 @@ export class InsightsService {
         actualMins = tasks.reduce((acc, t) => {
           const uDate = new Date(t.updatedAt || t.createdAt);
           if (this.isSameDay(uDate, today) && uDate.getHours() === hour) {
-            let taskMins = t.realTimer || 0;
-            if (t.subtasks) {
-              t.subtasks.forEach((st) => {
-                taskMins += st.timer || 0;
-              });
-            }
+            const taskMins = t.realTimer || 0;
             return acc + taskMins;
           }
           return acc;
@@ -245,14 +240,7 @@ export class InsightsService {
         actualMins = tasks.reduce((acc, t) => {
           const uDate = new Date(t.updatedAt || t.createdAt);
           if (this.isSameDay(uDate, date)) {
-            // Include parent task realTimer
-            let taskMins = t.realTimer || 0;
-            // Include subtasks timer
-            if (t.subtasks) {
-              t.subtasks.forEach((st) => {
-                taskMins += st.timer || 0;
-              });
-            }
+            const taskMins = t.realTimer || 0;
             return acc + taskMins;
           }
           return acc;
@@ -319,12 +307,7 @@ export class InsightsService {
             uDate <= weekEnd &&
             uDate.getMonth() === month
           ) {
-            let taskMins = t.realTimer || 0;
-            if (t.subtasks) {
-              t.subtasks.forEach((st) => {
-                taskMins += st.timer || 0;
-              });
-            }
+            const taskMins = t.realTimer || 0;
             return acc + taskMins;
           }
           return acc;

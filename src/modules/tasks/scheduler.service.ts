@@ -8,6 +8,7 @@ import * as admin from 'firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import { SchedulerService as NewSchedulerService } from '../scheduling/services/scheduler.service';
 import { MigrationService } from '../scheduling/services/migration.service';
+import { RealTimeGateway } from '../real-time/real-time.gateway';
 import {
   ExternalCalendarEvent,
   Meeting,
@@ -25,6 +26,7 @@ export class SchedulerService {
     private readonly timeBlocksService: TimeBlocksService,
     private readonly newSchedulerService: NewSchedulerService,
     private readonly migrationService: MigrationService,
+    private readonly realTimeGateway: RealTimeGateway,
   ) {}
 
   /**
@@ -134,6 +136,12 @@ export class SchedulerService {
 
       // 6. Apply scheduling results to database
       await this.applySchedulingResults(schedulingResult, userId);
+
+      // 7. Notify client via WebSockets
+      this.realTimeGateway.emitScheduleUpdate(userId, {
+        type: 'SCHEDULE_RECALCULATED',
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('[SCHEDULER] Error running Motion-style scheduler:', error);
       // Fallback to legacy scheduler if new one fails
@@ -178,13 +186,10 @@ export class SchedulerService {
       endTime: '17:00',
     };
 
-    // 2. Fetch all fixed constraints (Meetings, External Events, and Locked Focus Blocks)
+    // 2. Fetch all fixed constraints (Meetings and External Events)
     const timeBlocks = await this.timeBlocksService.findAllByUser(userId);
     const fixedBlocks = timeBlocks.filter(
-      (b) =>
-        b.blockType === 'Meeting' ||
-        b.blockType === 'External_Event' ||
-        b.isLocked,
+      (b) => b.blockType === 'Meeting' || b.blockType === 'External_Event',
     );
 
     // 3. Fetch all active, unlocked tasks
@@ -219,11 +224,9 @@ export class SchedulerService {
     });
 
     const activeTasks = allTasks.filter((t) => t.status !== 'Done');
-    const lockedTasks = activeTasks.filter((t) => t.isLocked);
-    const unlockedTasks = activeTasks.filter((t) => !t.isLocked);
 
     // Sort unlocked tasks by priority (Critical/4 to Low/1) and then by deadline (earlier first)
-    unlockedTasks.sort((a, b) => {
+    activeTasks.sort((a, b) => {
       const pA = a.priorityLevel || 1;
       const pB = b.priorityLevel || 1;
       if (pA !== pB) return pB - pA; // Descending priority
@@ -242,25 +245,6 @@ export class SchedulerService {
       }),
     );
 
-    // Add locked tasks as fixed intervals too
-    lockedTasks.forEach((t) => {
-      if (t.estimated_start_date && t.estimated_end_date) {
-        const startDate =
-          t.estimated_start_date instanceof Date
-            ? t.estimated_start_date
-            : new Date(t.estimated_start_date);
-        const endDate =
-          t.estimated_end_date instanceof Date
-            ? t.estimated_end_date
-            : new Date(t.estimated_end_date);
-        fixedIntervals.push({
-          start: startDate.getTime(),
-          end: endDate.getTime(),
-        });
-      }
-    });
-
-    // Helper to check if a 5-minute slot overlaps with any fixed interval
     const isOverlapping = (start: number, end: number): boolean => {
       return fixedIntervals.some((interval) => {
         return start < interval.end && end > interval.start;
@@ -302,10 +286,8 @@ export class SchedulerService {
     const generatedFocusBlocks: Partial<ITimeBlock>[] = [];
     const taskUpdates: { id: string; updates: Partial<ITask> }[] = [];
 
-    for (const task of unlockedTasks) {
+    for (const task of activeTasks) {
       const durationMinutes = task.estimateTimer || 30;
-      const isSplitable = task.isSplitable !== false; // default to true
-      const minBlock = task.minBlockDuration || 30;
 
       let remainingDuration = durationMinutes;
       let taskFirstStart: Date | null = null;
@@ -353,79 +335,34 @@ export class SchedulerService {
           (blockEnd.getTime() - blockStart.getTime()) / 60000;
 
         if (blockDuration >= 5) {
-          // If the task is splitable, we schedule whatever fits (min block size constraint check)
-          if (isSplitable) {
-            // We can schedule this chunk
-            const chunkDuration = Math.min(blockDuration, remainingDuration);
+          // Schedule the task in this block
+          const chunkDuration = Math.min(blockDuration, remainingDuration);
+          const endTimeVal = new Date(
+            blockStart.getTime() + chunkDuration * 60000,
+          );
 
-            // Check if chunk is at least minBlock or if it is the last remaining part of the task
-            if (
-              chunkDuration >= minBlock ||
-              chunkDuration === remainingDuration
-            ) {
-              const endTimeVal = new Date(
-                blockStart.getTime() + chunkDuration * 60000,
-              );
+          generatedFocusBlocks.push({
+            id: uuidv4(),
+            userId,
+            taskId: task.id,
+            startTime: blockStart,
+            endTime: endTimeVal,
+            blockType: 'Focus_Block',
+            source: 'App',
+            title: task.title,
+          });
 
-              generatedFocusBlocks.push({
-                id: uuidv4(),
-                userId,
-                taskId: task.id,
-                startTime: blockStart,
-                endTime: endTimeVal,
-                blockType: 'Focus_Block',
-                source: 'App',
-                isLocked: false,
-                title: task.title,
-              });
+          if (!taskFirstStart) taskFirstStart = blockStart;
+          taskLastEnd = endTimeVal;
 
-              if (!taskFirstStart) taskFirstStart = blockStart;
-              taskLastEnd = endTimeVal;
+          remainingDuration -= chunkDuration;
+          fixedIntervals.push({
+            start: blockStart.getTime(),
+            end: endTimeVal.getTime(),
+          });
 
-              remainingDuration -= chunkDuration;
-              fixedIntervals.push({
-                start: blockStart.getTime(),
-                end: endTimeVal.getTime(),
-              });
-
-              searchPtr = new Date(endTimeVal.getTime());
-              continue;
-            }
-          } else {
-            // Task is not splitable, must fit the entire duration in one block
-            if (blockDuration >= remainingDuration) {
-              const endTimeVal = new Date(
-                blockStart.getTime() + remainingDuration * 60000,
-              );
-
-              generatedFocusBlocks.push({
-                id: uuidv4(),
-                userId,
-                taskId: task.id,
-                startTime: blockStart,
-                endTime: endTimeVal,
-                blockType: 'Focus_Block',
-                source: 'App',
-                isLocked: false,
-                title: task.title,
-              });
-
-              taskFirstStart = blockStart;
-              taskLastEnd = endTimeVal;
-
-              remainingDuration = 0;
-              fixedIntervals.push({
-                start: blockStart.getTime(),
-                end: endTimeVal.getTime(),
-              });
-
-              searchPtr = new Date(endTimeVal.getTime());
-              continue;
-            }
-          }
+          searchPtr = new Date(endTimeVal.getTime());
         }
-
-        // Advance search pointer
         searchPtr.setMinutes(searchPtr.getMinutes() + 5);
       }
 
@@ -462,6 +399,12 @@ export class SchedulerService {
     });
     await batch.commit();
 
+    // Notify client via WebSockets
+    this.realTimeGateway.emitScheduleUpdate(userId, {
+      type: 'SCHEDULE_RECALCULATED',
+      timestamp: new Date().toISOString(),
+    });
+
     console.log(
       `[SCHEDULER] Completed scheduling. Created ${generatedFocusBlocks.length} Focus Blocks.`,
     );
@@ -493,7 +436,6 @@ export class SchedulerService {
           endTime: workBlock.end,
           blockType: 'Focus_Block',
           source: 'App',
-          isLocked: workBlock.isLocked,
           title: `Focus Block`,
           createdAt: workBlock.createdAt,
         });

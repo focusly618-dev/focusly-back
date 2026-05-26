@@ -45,8 +45,8 @@ export class MigrationService {
       return result;
     }
 
-    // 3. If task is locked and has estimated dates, migrate to WorkBlock
-    if (task.isLocked && task.estimated_start_date && task.estimated_end_date) {
+    // 3. If task has estimated dates, migrate to WorkBlock
+    if (task.estimated_start_date && task.estimated_end_date) {
       result.workBlock = this.migrateToWorkBlock(task);
       return result;
     }
@@ -69,7 +69,6 @@ export class MigrationService {
       duration:
         (timeBlock.endTime.getTime() - timeBlock.startTime.getTime()) / 60000,
       blockType: this.mapBlockType(timeBlock.blockType),
-      isLocked: timeBlock.isLocked,
       isGenerated: timeBlock.source === 'App',
       createdAt: timeBlock.createdAt,
       updatedAt: new Date(),
@@ -137,7 +136,6 @@ export class MigrationService {
         responseStatus: this.mapResponseStatus(c.responseStatus),
         avatar: c.avatar,
       })),
-      isLocked: task.isLocked || false,
       isRecurring: false, // Would need to determine this
       recurrenceRule: undefined,
       source: task.source === 'google' ? 'external' : 'manual',
@@ -162,18 +160,7 @@ export class MigrationService {
       deadline: task.deadline,
       hardDeadline: undefined, // Would need to determine this
       estimatedDuration: task.estimateTimer || 30,
-      isSplitable: task.isSplitable !== false,
-      minBlockDuration: task.minBlockDuration || 30,
-      maxBlockDuration: undefined,
-      preferredTimeOfDay: this.mapPreferredTimeOfDay(task.preferredTimeOfDay),
-      preferredDays: undefined,
       status: this.mapStatus(task.status),
-      subtasks: (task.subtasks || []).map((st, idx) => ({
-        id: `${task.id}_sub_${idx}`,
-        title: st.title,
-        completed: st.completed,
-        estimatedDuration: st.estimateTimer || 30,
-      })),
       dependsOnTaskIds: [],
       blocksTaskIds: [],
       category: task.category,
@@ -198,7 +185,6 @@ export class MigrationService {
       end: task.estimated_end_date || task.deadline,
       duration: task.estimateTimer || 30,
       blockType: 'focus',
-      isLocked: task.isLocked || false,
       isGenerated: false,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
@@ -324,25 +310,6 @@ export class MigrationService {
     if (diffDays < 7) return 'this_week';
     if (diffDays < 30) return 'this_month';
     return 'flexible';
-  }
-
-  /**
-   * Map preferred time of day.
-   */
-  private mapPreferredTimeOfDay(
-    preferred?: string,
-  ): NewTask['preferredTimeOfDay'] {
-    if (!preferred) return 'any';
-    switch (preferred.toLowerCase()) {
-      case 'morning':
-        return 'morning';
-      case 'afternoon':
-        return 'afternoon';
-      case 'evening':
-        return 'evening';
-      default:
-        return 'any';
-    }
   }
 
   /**

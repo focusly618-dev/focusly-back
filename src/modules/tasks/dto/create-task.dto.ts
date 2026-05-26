@@ -7,7 +7,6 @@ import {
   IsArray,
   IsOptional,
 } from 'class-validator';
-import { SubtaskInput } from '../entities/task.entity';
 
 export class CreateTaskDto {
   @IsString()
@@ -39,9 +38,6 @@ export class CreateTaskDto {
   @IsOptional()
   @IsEnum(['Backlog', 'Scheduled', 'Done', 'Archived'])
   status?: 'Backlog' | 'Scheduled' | 'Done' | 'Archived';
-
-  @IsArray()
-  subtasks: SubtaskInput[];
 
   @IsArray()
   @IsString({ each: true })
